@@ -21,7 +21,7 @@ $ py -m pipx install poetry
 
 ## Run project
 
-In [boostrap](boostrap) or [taxi_driver](taxi_driver) directory, run:
+Run [boostrap](bootstrap) or [taxi_driver](taxi_driver) scripts from the root directory.
 
 ```console
 $ poetry install
@@ -30,8 +30,8 @@ $ poetry install
 To start the program:
 
 ```console
-$ poetry run python <file>.py
+$ poetry run python <directory>/<file>.py
 # or activate the shell
 $ poetry shell
-$ py <file>.py
+$ py <directory>/<file>.py
 ```
