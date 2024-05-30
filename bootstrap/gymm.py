@@ -8,7 +8,7 @@ from common.params import FrozenLakeParams
 from common.algorithms import QLearning
 from common.policies import EpsilonGreedy
 from common.environments import FrozenLake
-from common.plots import Plots
+from common.plots import Plots, FrozenLakePlots
 
 
 def main():
@@ -19,17 +19,18 @@ def main():
         gamma=0.90,
         epsilon=0.2,
         min_epsilon=0.0,
+        random_seed=False,
         seed=123,
         is_slippery=True,
         proba_frozen=0.9,
         savefig_folder=Path("./static/img/tutorials/"),
     )
 
-    map_sizes = [8]
+    map_sizes = [(8, 8)]
     max_steps = [200]
 
     for map_size, max_steps in zip(map_sizes, max_steps):
-        params.map_size = map_size
+        params.map_size = map_size[0]
         params.max_n_steps = max_steps
 
         env = FrozenLake(params).env
@@ -44,7 +45,7 @@ def main():
 
         algorithm.run()
 
-        Plots.plot(
+        FrozenLakePlots.plot(
             policy=algorithm.get_current_policy(),
             algorithm=algorithm,
             env=env,

@@ -93,7 +93,7 @@ class Algorithm:
         :return: None
         """
         for episode in range(self.params.n_episodes):
-            state, _ = self.env.reset(seed=self.params.seed)
+            state, _ = self.env.reset() if self.params.random_seed else self.env.reset(seed=self.params.seed)
             episode_history = EpisodeHistory(states=[state], actions=[], rewards=[])
 
             while True:
