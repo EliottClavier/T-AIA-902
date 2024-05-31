@@ -49,6 +49,10 @@ class EpsilonGreedy(Policy):
         Initialize the policy.
         :param epsilon: exploration probability
         """
+
+        if epsilon < 0 or epsilon > 1:
+            raise ValueError("Epsilon must be in the interval [0, 1].")
+
         self.epsilon = epsilon
 
     def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
@@ -83,19 +87,36 @@ class DecayedEpsilonGreedy(Policy):
     n_episodes: int
     current_episode: int = 0
     linear: bool = False
+    manual_decay_rate: float | None = None
 
-    def __init__(self, initial_epsilon: float, min_epsilon: float, n_episodes: int, linear: bool = False) -> None:
+    def __init__(self, initial_epsilon: float, min_epsilon: float, n_episodes: int,
+                 linear: bool = False, manual_decay_rate: float = None) -> None:
         """
         Initialize the policy.
         :param initial_epsilon: starting exploration probability
         :param min_epsilon: minimum exploration probability
         :param n_episodes: number of episodes
         :param linear: linear decay
+        :param manual_decay_rate: manual decay rate
         """
+
+        if initial_epsilon < min_epsilon:
+            raise ValueError("Initial epsilon must be greater than or equal to min epsilon.")
+
+        if initial_epsilon < 0 or initial_epsilon > 1:
+            raise ValueError("Initial epsilon must be in the interval [0, 1].")
+
+        if min_epsilon < 0 or min_epsilon > 1:
+            raise ValueError("Min epsilon must be in the interval [0, 1].")
+
+        if manual_decay_rate is not None and (manual_decay_rate < 0 or manual_decay_rate >= 1):
+            raise ValueError("Decay rate must be in the interval [0, 1).")
+
         self.initial_epsilon = initial_epsilon
         self.min_epsilon = min_epsilon
         self.n_episodes = n_episodes
         self.linear = linear
+        self.manual_decay_rate = manual_decay_rate
 
     def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
         """
@@ -108,8 +129,7 @@ class DecayedEpsilonGreedy(Policy):
         if self.linear:
             epsilon = self.initial_epsilon - (self.initial_epsilon - self.min_epsilon) * self.current_episode / self.n_episodes
         else:
-            decay_rate = (self.min_epsilon / self.initial_epsilon) ** (1.0 / self.n_episodes)
-            epsilon = max(self.min_epsilon, self.initial_epsilon * (decay_rate ** self.current_episode))
+            epsilon = max(self.min_epsilon, self.initial_epsilon * ((1 - self.decay_rate) ** self.current_episode))
 
         if random.uniform(0, 1) < epsilon:
             return env.action_space.sample(), epsilon
@@ -120,12 +140,23 @@ class DecayedEpsilonGreedy(Policy):
             return np.argmax(Q[state, :]), epsilon
 
     @property
+    def decay_rate(self) -> float:
+        """
+        Compute the decay rate.
+        :return: decay rate
+        """
+        return self.manual_decay_rate or (1 - (self.min_epsilon / self.initial_epsilon) ** (1.0 / self.n_episodes))
+
+    @property
     def description(self) -> str:
         """
         Get the description of the policy.
         :return: description
         """
-        return f"{self.__class__.__name__} - {self.initial_epsilon} ε max - {self.min_epsilon} ε min"
+        return (
+            f"{self.__class__.__name__} - {self.initial_epsilon} ε max - {self.min_epsilon} ε min"
+            f" - {self.decay_rate:.6f} decay rate"
+        )
 
 
 class Softmax(Policy):
@@ -137,6 +168,10 @@ class Softmax(Policy):
         Initialize the policy.
         :param tau: temperature
         """
+
+        if tau <= 0:
+            raise ValueError("Tau must be greater than 0.")
+
         self.tau = tau
 
     def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
