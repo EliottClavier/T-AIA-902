@@ -26,7 +26,17 @@ class RewardFunction:
 
 
 @dataclass
-class FrozenLakeRewards:
+class Rewards:
+    """
+    Default rewards for the environment.
+    """
+    win_reward: float = 0.0
+    lose_reward: float = 0.0
+    playing_reward: float = 0.0
+
+
+@dataclass
+class FrozenLakeRewards(Rewards):
     """
     Default rewards for the FrozenLake environment.
     """
@@ -90,3 +100,13 @@ class FrozenLakeTweakedRewardFunction(RewardFunction, FrozenLakeRewards):
             return self.tweaked_playing_reward * next_state / env.observation_space.n if self.relative else self.tweaked_playing_reward
         # If no condition is met, we reward the agent normally
         return reward
+
+
+@dataclass
+class TaxiDriverRewards(Rewards):
+    """
+    Default rewards for the TaxiDriver environment.
+    """
+    win_reward: float = 20.0
+    lose_reward: float = -10.0
+    playing_reward: float = -1.0

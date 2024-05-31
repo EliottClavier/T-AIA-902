@@ -1,4 +1,4 @@
-from abc import abstractmethod
+import os
 from dataclasses import dataclass, field
 from typing import List, Tuple
 
@@ -6,7 +6,7 @@ import numpy as np
 from gymnasium import Env
 
 from common.policies import Policy
-from common.rewards import RewardFunction
+from common.rewards import RewardFunction, Rewards
 from common.params import Params
 
 
@@ -59,6 +59,7 @@ class Algorithm:
         self.reward_function = reward_function
 
         self.Q = self.init_q_table(self.env)
+        self.params.run_name, self.params.run_description = self.init_run_infos(self.env, self.params, self.policy)
         self.historic = AlgorithmHistory()
 
     @staticmethod
@@ -71,6 +72,27 @@ class Algorithm:
         """
         return np.zeros((env.observation_space.n, env.action_space.n))
 
+    def init_run_infos(self, env: Env, params: Params, policy: Policy) -> Tuple[str, str]:
+        """
+        Initialize the run name and description.
+        :param env: environment
+        :param algorithm_name: name of the algorithm
+        :param params: parameters
+        :param policy: policy
+        :return: run name
+        """
+        return (
+            # Name of the run
+            f"{env.spec.id}_{self.__class__.__name__}_"
+            f"{params.n_episodes}_{params.map_size[0]}x{params.map_size[1]}_"
+            f"{policy.__class__.__name__}",
+            # Description of the run
+            f"{env.spec.id} - {self.__class__.__name__} - {params.n_episodes} episodes - "
+            f"{params.map_size[0]}x{params.map_size[1]} - "
+            f"{params.learning_rate} α - {params.gamma} γ - "
+            f"{policy.description}"
+        )
+
     @staticmethod
     def get_policy_from_q(Q: np.ndarray) -> np.ndarray:
         """
@@ -80,9 +102,10 @@ class Algorithm:
         """
         return np.argmax(Q, axis=1)
 
-    def get_current_policy(self) -> np.ndarray:
+    @property
+    def computed_policy(self) -> np.ndarray:
         """
-        Get the current policy from the Q-table.
+        Current policy computed from the Q-table.
         :return: policy
         """
         return self.get_policy_from_q(self.Q)
@@ -93,7 +116,7 @@ class Algorithm:
         :return: None
         """
         for episode in range(self.params.n_episodes):
-            state, _ = self.env.reset(seed=self.params.seed)
+            state, _ = self.env.reset() if self.params.random_seed else self.env.reset(seed=self.params.seed)
             episode_history = EpisodeHistory(states=[state], actions=[], rewards=[])
 
             while True:
@@ -114,6 +137,7 @@ class Algorithm:
         """
         # Update the policy at the end of the episode
         self.policy.on_episode_end(current_episode=episode)
+        self.save()
 
     def step(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
         """
@@ -165,6 +189,68 @@ class Algorithm:
         """
         self.Q = self.init_q_table(self.env)
         self.historic = AlgorithmHistory()
+
+    def save(self) -> None:
+        """
+        Save the algorithm model.
+        :return: None
+        """
+
+        if not os.path.exists(self.params.savemodel_folder):
+            os.makedirs(self.params.savemodel_folder)
+
+        np.save(self.params.savemodel_folder / self.params.run_name, self.Q)
+
+    def load(self, run_name: str = "") -> None:
+        """
+        Load the algorithm model.
+        :param run_name: name of the run. If empty, it will load the model with the current run name.
+        :return: None
+        """
+        self.Q = np.load(os.path.join(self.params.savemodel_folder, run_name or self.params.run_name + ".npy"))
+
+    def evaluate(self, rewards: Rewards, n_runs: int = None) -> Tuple[list, list]:
+        """
+        Evaluate by playing a number of games without learning.
+        :param rewards: rewards to use
+        :param n_runs: number of games to play. If None, it will play the number of games defined in the parameters.
+        :return: list of steps, number of losses
+        """
+
+        steps = []
+        losses = []
+
+        for _ in range(n_runs or self.params.n_runs):
+            n_steps, lost = self.evaluate_once(rewards)
+            steps.append(n_steps)
+            losses.append(lost)
+
+        return steps, losses
+
+    def evaluate_once(self, rewards: Rewards) -> Tuple[int, bool]:
+        """
+        Evaluate by playing a game without learning.
+        :param rewards: rewards to use
+        :return: number of steps, if the game was lost
+        """
+
+        state, _ = self.env.reset() if self.params.random_seed else self.env.reset(seed=self.params.seed)
+        self.env.render()
+        steps = 0
+        lost = False
+        while True:
+            action = self.computed_policy[state]
+            state, reward, terminated, truncated, _ = self.env.step(action)
+            steps += 1
+
+            if terminated or truncated:
+                if reward == rewards.lose_reward:
+                    lost = True
+                break
+
+            self.env.render()
+
+        return steps, lost
 
 
 class MonteCarlo(Algorithm):
@@ -277,5 +363,3 @@ class QLearning(Algorithm):
         self.historic.average_rewards.append(np.mean(episode_history.rewards))
         self.historic.episodes_histories.append(episode_history)
         super().complete_episode(episode, episode_history)
-
-

@@ -8,64 +8,26 @@ from gymnasium import Env
 
 from common.params import Params
 from common.algorithms import Algorithm, AlgorithmHistory
+from common.rewards import Rewards, FrozenLakeRewards, TaxiDriverRewards
 
 sns.set_theme()
 
 
 class Plots:
 
+    rewards: Rewards = Rewards()
+
     @staticmethod
     def plot(policy: np.ndarray, env: Env, algorithm: Algorithm, params: Params) -> None:
         """
-        Plot the results of the algorithm, the policy, results of games and more
+        Plot the results of the algorithm, the policy, results of games and more. Should be implemented by subclasses.
         :param policy: policy to plot
         :param env: environment
         :param algorithm: algorithm used
         :param params: parameters used
         :return: None
         """
-
-        fig, ax = plt.subplots(4, 2, figsize=(16, 16))
-        fig.suptitle(f"{env.spec.id} - {algorithm.__class__.__name__} - {params.map_size}x{params.map_size} - {params.n_episodes} episodes")
-
-        Plots.plot_last_frame(env, ax[0][0])
-        Plots.plot_policy_map(policy, params, ax[0][1])
-
-        Plots.plot_epsilons(algorithm.historic.epsilons, ax[1][0])
-        Plots.plot_average_rewards(algorithm.historic.average_rewards, ax[1][1])
-
-        Plots.plot_episodes_number_of_steps(algorithm.historic, ax[2][0])
-        Plots.plot_history_heatmap(algorithm.historic, params, env, ax[2][1])
-
-        steps, losses = Plots.play_games(env, policy, params.n_runs)
-        steps_when_winning = [steps[i] for i in range(len(steps)) if not losses[i]]
-        n_losses = len([loss for loss in losses if loss])
-
-        Plots.plot_games_results(n_losses, params.n_runs, ax[3][0])
-        Plots.plot_games_steps(steps, steps_when_winning, params.n_runs, ax[3][1])
-
-        plt.tight_layout()
-        plt.show()
-
-        img_title = f"{env.spec.id}_{algorithm.__class__.__name__}_{params.map_size}x{params.map_size}_{params.n_episodes}.png"
-
-        if not os.path.exists(params.savefig_folder):
-            os.makedirs(params.savefig_folder)
-        fig.savefig(params.savefig_folder / img_title, bbox_inches="tight")
-
-    @staticmethod
-    def get_policy_directions(policy: np.ndarray, map_size: int) -> np.ndarray:
-        """
-        Convert a policy to a matrix of directions
-        :param policy: policy
-        :param map_size: size of the map
-        :return: policy directions
-        """
-
-        directions = ['←', '↓', '→', '↑']
-        policy_directions = [directions[action] for action in policy]
-        policy_directions = np.array(policy_directions).reshape(map_size, map_size)
-        return policy_directions
+        pass
 
     @staticmethod
     def plot_last_frame(env: Env, ax: plt.Axes) -> None:
@@ -79,83 +41,6 @@ class Plots:
         ax.imshow(env.render())
         ax.axis("off")
         ax.set_title("Last frame")
-
-    @staticmethod
-    def plot_policy_map(policy: np.ndarray, params: Params, ax: plt.Axes) -> None:
-        """
-        Plot a given policy map
-        :param policy: policy to plot
-        :param map_size: size of the map
-        :param ax: axis to plot on
-        :return: None
-        """
-
-        policy_directions = Plots.get_policy_directions(policy, params.map_size)
-
-        sns.heatmap(
-            policy.reshape(params.map_size, params.map_size),
-            annot=policy_directions,
-            fmt="",
-            ax=ax,
-            cmap=sns.color_palette("Blues", as_cmap=True),
-            linewidths=0.7,
-            linecolor="black",
-            xticklabels=[],
-            yticklabels=[],
-            annot_kws={"fontsize": "xx-large"},
-        ).set(title="Learned policy\nArrow indicates the action to take")
-
-        for _, spine in ax.spines.items():
-            spine.set_visible(True)
-            spine.set_linewidth(0.7)
-            spine.set_color("black")
-
-    @staticmethod
-    def play_games(env: Env, policy: np.ndarray, n_runs: int) -> Tuple[list, list]:
-        """
-        Play a number of games using a given policy
-        :param env: environment
-        :param policy: policy to use
-        :param n_runs: number of games to play
-        :return: list of steps, number of losses
-        """
-
-        steps = []
-        losses = []
-
-        for _ in range(n_runs):
-            n_steps, lost = Plots.play_game(env, policy)
-            steps.append(n_steps)
-            losses.append(lost)
-
-        return steps, losses
-
-    @staticmethod
-    def play_game(env: Env, policy: np.ndarray) -> Tuple[int, bool]:
-        """
-        Play a game using a given policy
-        :param env: environment
-        :param policy: policy to use
-        :return: number of steps, if the game was lost
-        """
-
-        state, _ = env.reset()
-        env.render()
-        steps = 0
-        lost = False
-        while True:
-            action = policy[state]
-            state, reward, terminated, truncated, _ = env.step(action)
-            steps += 1
-
-            if terminated or truncated:
-                if reward == 0:
-                    lost = True
-                break
-
-            env.render()
-
-        return steps, lost
 
     @staticmethod
     def plot_games_results(n_losses: int, n_runs: int, ax: plt.Axes) -> None:
@@ -221,6 +106,23 @@ class Plots:
         ax.set_title("Average reward over episodes")
 
     @staticmethod
+    def plot_cumulative_rewards(history: AlgorithmHistory, ax: plt.Axes):
+        """
+        Plot the cumulative rewards over the episodes
+        :param history: history of the algorithm
+        :param ax: axis to plot on
+        :return: None
+        """
+
+        cumulative_rewards = [sum(episode.rewards) for episode in history.episodes_histories]
+
+        ax.plot(cumulative_rewards)
+        ax.set_xlabel("Episode")
+        ax.set_ylabel("Cumulative reward")
+        ax.set_title("Cumulative reward over episodes")
+
+
+    @staticmethod
     def plot_episodes_number_of_steps(history: AlgorithmHistory, ax: plt.Axes) -> None:
         """
         Plot the number of steps over the episodes
@@ -245,7 +147,7 @@ class Plots:
                 states[state] += 1
 
         sns.heatmap(
-            states.reshape(params.map_size, params.map_size),
+            states.reshape(params.map_size[0], params.map_size[1]),
             #annot=policy_directions,
             fmt="",
             ax=ax,
@@ -264,3 +166,128 @@ class Plots:
         ax.set_xlabel("States")
         ax.set_ylabel("Visits")
 
+
+class FrozenLakePlots(Plots):
+
+    rewards: Rewards = FrozenLakeRewards()
+
+    @staticmethod
+    def plot(policy: np.ndarray, env: Env, algorithm: Algorithm, params: Params) -> None:
+        """
+        Plot the results of the algorithm, the policy, results of games and more
+        :param policy: policy to plot
+        :param env: environment
+        :param algorithm: algorithm used
+        :param params: parameters used
+        :return: None
+        """
+        fig, ax = plt.subplots(4, 2, figsize=(16, 16))
+        fig.suptitle(params.run_description)
+
+        Plots.plot_last_frame(env, ax[0][0])
+        FrozenLakePlots.plot_policy_map(policy, params, ax[0][1])
+
+        Plots.plot_epsilons(algorithm.historic.epsilons, ax[1][0])
+        Plots.plot_average_rewards(algorithm.historic.average_rewards, ax[1][1])
+
+        Plots.plot_episodes_number_of_steps(algorithm.historic, ax[2][0])
+        Plots.plot_history_heatmap(algorithm.historic, params, env, ax[2][1])
+
+        steps, losses = algorithm.evaluate(FrozenLakePlots.rewards)
+        steps_when_winning = [steps[i] for i in range(len(steps)) if not losses[i]]
+        n_losses = len([loss for loss in losses if loss])
+
+        Plots.plot_games_results(n_losses, params.n_runs, ax[3][0])
+        Plots.plot_games_steps(steps, steps_when_winning, params.n_runs, ax[3][1])
+
+        plt.tight_layout()
+        plt.show()
+
+        if not os.path.exists(params.savefig_folder):
+            os.makedirs(params.savefig_folder)
+        fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")
+
+    @staticmethod
+    def get_policy_directions(policy: np.ndarray, map_size: Tuple[int]) -> np.ndarray:
+        """
+        Convert a policy to a matrix of directions
+        :param policy: policy
+        :param map_size: size of the map
+        :return: policy directions
+        """
+
+        directions = ['←', '↓', '→', '↑']
+
+        policy_directions = [directions[action] for action in policy]
+        policy_directions = np.array(policy_directions).reshape(map_size[0], map_size[1])
+        return policy_directions
+
+    @staticmethod
+    def plot_policy_map(policy: np.ndarray, params: Params, ax: plt.Axes) -> None:
+        """
+        Plot a given policy map
+        :param policy: policy to plot
+        :param params: parameters
+        :param ax: axis to plot on
+        :return: None
+        """
+
+        policy_directions = FrozenLakePlots.get_policy_directions(policy, params.map_size)
+
+        sns.heatmap(
+            policy.reshape(params.map_size[0], params.map_size[1]),
+            annot=policy_directions,
+            fmt="",
+            ax=ax,
+            cmap=sns.color_palette("Blues", as_cmap=True),
+            linewidths=0.7,
+            linecolor="black",
+            xticklabels=[],
+            yticklabels=[],
+            annot_kws={"fontsize": "xx-large"},
+        ).set(title="Learned policy\nArrow indicates the action to take")
+
+        for _, spine in ax.spines.items():
+            spine.set_visible(True)
+            spine.set_linewidth(0.7)
+            spine.set_color("black")
+
+
+class TaxiDriverPlots(Plots):
+
+    rewards: Rewards = TaxiDriverRewards()
+
+    @staticmethod
+    def plot(policy: np.ndarray, env: Env, algorithm: Algorithm, params: Params) -> None:
+        """
+        Plot the results of the algorithm, the policy, results of games and more
+        :param policy: policy to plot
+        :param env: environment
+        :param algorithm: algorithm used
+        :param params: parameters used
+        :return: None
+        """
+
+        fig, ax = plt.subplots(3, 2, figsize=(16, 16))
+        fig.suptitle(params.run_description)
+
+        Plots.plot_epsilons(algorithm.historic.epsilons, ax[0][0])
+        # Plots.plot_history_heatmap(algorithm.historic, params, env, ax[0][1])
+
+        Plots.plot_episodes_number_of_steps(algorithm.historic, ax[1][0])
+        Plots.plot_cumulative_rewards(algorithm.historic, ax[1][1])
+
+        steps, losses = algorithm.evaluate(TaxiDriverPlots.rewards)
+        steps_when_winning = [steps[i] for i in range(len(steps)) if not losses[i]]
+        n_losses = len([loss for loss in losses if loss])
+
+        Plots.plot_games_results(n_losses, params.n_runs, ax[2][0])
+        Plots.plot_games_steps(steps, steps_when_winning, params.n_runs, ax[2][1])
+
+        plt.tight_layout()
+        plt.show()
+
+        if not os.path.exists(params.savefig_folder):
+            os.makedirs(params.savefig_folder)
+
+        fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")

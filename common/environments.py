@@ -4,7 +4,9 @@ import gymnasium as gym
 from gymnasium import Env
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 
-from common.params import Params, FrozenLakeParams
+from common.params import Params, FrozenLakeParams, TaxiDriverParams
+from common.taxi import TaxiEnv
+
 
 class Game:
     """
@@ -76,12 +78,40 @@ class FrozenLake(Game):
         :return: environment
         """
         # Get map_size from kwargs if it exists, otherwise default to 4
-
         return gym.make(
             self.name,
             is_slippery=params.is_slippery,
             render_mode=params.render_mode,
             desc=generate_random_map(
-                size=params.map_size, p=params.proba_frozen, seed=params.seed
+                size=params.map_size[0], p=params.proba_frozen, seed=params.seed
             ),
+        )
+
+
+class TaxiDriver(Game):
+    """
+    FrozenLake game.
+    """
+
+    # Name of the game
+    name: str = "Custom-TaxiDriver-v1"
+
+    def make(self, params: TaxiDriverParams) -> Env:
+        """
+        Make the FrozenLake game.
+        :param params: parameters for the game
+        :return: environment
+        """
+
+        """
+        gym.envs.register(
+            id=self.name,
+            entry_point=TaxiEnv
+        )
+        """
+
+        return gym.make(
+            #self.name,
+            "Taxi-v3",
+            render_mode=params.render_mode,
         )

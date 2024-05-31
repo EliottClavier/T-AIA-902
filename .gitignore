@@ -2,3 +2,6 @@
 .vscode
 
 static
+
+# ignore __pycache__ directories
+**/__pycache__/*

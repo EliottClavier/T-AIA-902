@@ -31,6 +31,14 @@ class Policy:
             if hasattr(self, key):
                 setattr(self, key, value)
 
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return self.__class__.__name__
+
 
 class EpsilonGreedy(Policy):
 
@@ -58,6 +66,14 @@ class EpsilonGreedy(Policy):
             if np.all(Q[state, :]) == Q[state, 0]:
                 return env.action_space.sample(), self.epsilon
             return np.argmax(Q[state, :]), self.epsilon
+
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return f"{self.__class__.__name__} - {self.epsilon} ε"
 
 
 class DecayedEpsilonGreedy(Policy):
@@ -103,6 +119,14 @@ class DecayedEpsilonGreedy(Policy):
                 return env.action_space.sample(), epsilon
             return np.argmax(Q[state, :]), epsilon
 
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return f"{self.__class__.__name__} - {self.initial_epsilon} ε max - {self.min_epsilon} ε min"
+
 
 class Softmax(Policy):
 
@@ -127,3 +151,11 @@ class Softmax(Policy):
         probabilities = np.exp(Q[state] / self.tau) / np.sum(np.exp(Q[state] / self.tau))
         # Choose an action according to the probabilities
         return np.random.choice(env.action_space.n, p=probabilities)
+
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return f"{self.__class__.__name__} - {self.tau} τ"
