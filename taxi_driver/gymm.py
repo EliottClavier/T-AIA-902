@@ -7,7 +7,7 @@ from common.rewards import TaxiDriverRewards
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
 from common.params import TaxiDriverParams
-from common.algorithms import QLearning
+from common.algorithms import QLearning, SARSA
 from common.policies import DecayedEpsilonGreedy
 from common.environments import TaxiDriver
 from common.plots import TaxiDriverPlots
@@ -17,10 +17,10 @@ def main():
     params = TaxiDriverParams(
         n_episodes=10000,
         n_runs=100,
-        learning_rate=0.5,
-        gamma=0.9,
+        learning_rate=0.85,
+        gamma=0.99,
         epsilon=1.0,
-        min_epsilon=0.01,
+        min_epsilon=0.001,
         random_seed=True,
         seed=123,
         max_n_steps=100,
@@ -30,13 +30,14 @@ def main():
 
     env = TaxiDriver(params).env
 
-    algorithm = QLearning(
+    algorithm = SARSA(
         env=env,
         params=params,
         policy=DecayedEpsilonGreedy(
             initial_epsilon=params.epsilon,
             min_epsilon=params.min_epsilon,
             n_episodes=params.n_episodes,
+            manual_decay_rate=0.001,
         ),
     )
 
