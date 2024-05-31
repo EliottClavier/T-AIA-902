@@ -24,6 +24,7 @@ def main():
         is_slippery=True,
         proba_frozen=0.9,
         savefig_folder=Path("./static/img/tutorials/"),
+        savemodel_folder=Path("./static/models/tutorials/"),
     )
 
     map_sizes = [(8, 8)]
@@ -46,7 +47,7 @@ def main():
         algorithm.run()
 
         FrozenLakePlots.plot(
-            policy=algorithm.get_current_policy(),
+            policy=algorithm.computed_policy,
             algorithm=algorithm,
             env=env,
             params=params,

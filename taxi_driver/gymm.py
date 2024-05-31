@@ -2,11 +2,13 @@ import sys
 import os
 from pathlib import Path
 
+from common.rewards import TaxiDriverRewards
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
 from common.params import TaxiDriverParams
 from common.algorithms import QLearning
-from common.policies import EpsilonGreedy, DecayedEpsilonGreedy
+from common.policies import DecayedEpsilonGreedy
 from common.environments import TaxiDriver
 from common.plots import TaxiDriverPlots
 
@@ -21,10 +23,10 @@ def main():
         min_epsilon=0.01,
         random_seed=True,
         seed=123,
-        savefig_folder=Path("./static/img/tutorials/"),
+        max_n_steps=100,
+        savefig_folder=Path("./static/img/taxi_driver/"),
+        savemodel_folder=Path("./static/models/taxi_driver/"),
     )
-
-    params.max_n_steps = 100
 
     env = TaxiDriver(params).env
 
@@ -41,7 +43,7 @@ def main():
     algorithm.run()
 
     TaxiDriverPlots.plot(
-        policy=algorithm.get_current_policy(),
+        policy=algorithm.computed_policy,
         algorithm=algorithm,
         env=env,
         params=params,

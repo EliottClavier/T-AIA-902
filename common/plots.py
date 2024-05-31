@@ -43,57 +43,6 @@ class Plots:
         ax.set_title("Last frame")
 
     @staticmethod
-    def play_games(env: Env, policy: np.ndarray, n_runs: int, rewards: Rewards, params: Params) -> Tuple[list, list]:
-        """
-        Play a number of games using a given policy
-        :param env: environment
-        :param policy: policy to use
-        :param n_runs: number of games to play
-        :param rewards: rewards to use
-        :param params: parameters
-        :return: list of steps, number of losses
-        """
-
-        steps = []
-        losses = []
-
-        for _ in range(n_runs):
-            n_steps, lost = Plots.play_game(env, policy, rewards, params)
-            steps.append(n_steps)
-            losses.append(lost)
-
-        return steps, losses
-
-    @staticmethod
-    def play_game(env: Env, policy: np.ndarray, rewards: Rewards, params: Params) -> Tuple[int, bool]:
-        """
-        Play a game using a given policy
-        :param env: environment
-        :param policy: policy to use
-        :param rewards: rewards to use
-        :param params: parameters
-        :return: number of steps, if the game was lost
-        """
-
-        state, _ = env.reset() if params.random_seed else env.reset(seed=params.seed)
-        env.render()
-        steps = 0
-        lost = False
-        while True:
-            action = policy[state]
-            state, reward, terminated, truncated, _ = env.step(action)
-            steps += 1
-
-            if terminated or truncated:
-                if reward == rewards.lose_reward:
-                    lost = True
-                break
-
-            env.render()
-
-        return steps, lost
-
-    @staticmethod
     def plot_games_results(n_losses: int, n_runs: int, ax: plt.Axes) -> None:
         """
         Plot the number of wins and losses over the games
@@ -233,8 +182,7 @@ class FrozenLakePlots(Plots):
         :return: None
         """
         fig, ax = plt.subplots(4, 2, figsize=(16, 16))
-        fig.suptitle(
-            f"{env.spec.id} - {algorithm.__class__.__name__} - {params.map_size[0]}x{params.map_size[1]} - {params.n_episodes} episodes")
+        fig.suptitle(params.run_description)
 
         Plots.plot_last_frame(env, ax[0][0])
         FrozenLakePlots.plot_policy_map(policy, params, ax[0][1])
@@ -245,7 +193,7 @@ class FrozenLakePlots(Plots):
         Plots.plot_episodes_number_of_steps(algorithm.historic, ax[2][0])
         Plots.plot_history_heatmap(algorithm.historic, params, env, ax[2][1])
 
-        steps, losses = Plots.play_games(env, policy, params.n_runs, FrozenLakePlots.rewards, params)
+        steps, losses = algorithm.evaluate(FrozenLakePlots.rewards)
         steps_when_winning = [steps[i] for i in range(len(steps)) if not losses[i]]
         n_losses = len([loss for loss in losses if loss])
 
@@ -255,11 +203,9 @@ class FrozenLakePlots(Plots):
         plt.tight_layout()
         plt.show()
 
-        img_title = f"{env.spec.id}_{algorithm.__class__.__name__}_{params.map_size[0]}x{params.map_size[1]}_{params.n_episodes}.png"
-
         if not os.path.exists(params.savefig_folder):
             os.makedirs(params.savefig_folder)
-        fig.savefig(params.savefig_folder / img_title, bbox_inches="tight")
+        fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")
 
     @staticmethod
     def get_policy_directions(policy: np.ndarray, map_size: Tuple[int]) -> np.ndarray:
@@ -323,8 +269,7 @@ class TaxiDriverPlots(Plots):
         """
 
         fig, ax = plt.subplots(3, 2, figsize=(16, 16))
-        fig.suptitle(
-            f"{env.spec.id} - {algorithm.__class__.__name__} - {params.map_size[0]}x{params.map_size[1]} - {params.n_episodes} episodes")
+        fig.suptitle(params.run_description)
 
         Plots.plot_epsilons(algorithm.historic.epsilons, ax[0][0])
         # Plots.plot_history_heatmap(algorithm.historic, params, env, ax[0][1])
@@ -332,7 +277,7 @@ class TaxiDriverPlots(Plots):
         Plots.plot_episodes_number_of_steps(algorithm.historic, ax[1][0])
         Plots.plot_cumulative_rewards(algorithm.historic, ax[1][1])
 
-        steps, losses = Plots.play_games(env, policy, params.n_runs, TaxiDriverPlots.rewards, params)
+        steps, losses = algorithm.evaluate(TaxiDriverPlots.rewards)
         steps_when_winning = [steps[i] for i in range(len(steps)) if not losses[i]]
         n_losses = len([loss for loss in losses if loss])
 
@@ -342,8 +287,7 @@ class TaxiDriverPlots(Plots):
         plt.tight_layout()
         plt.show()
 
-        img_title = f"{env.spec.id}_{algorithm.__class__.__name__}_{params.map_size[0]}x{params.map_size[1]}_{params.n_episodes}.png"
-
         if not os.path.exists(params.savefig_folder):
             os.makedirs(params.savefig_folder)
-        fig.savefig(params.savefig_folder / img_title, bbox_inches="tight")
+
+        fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")

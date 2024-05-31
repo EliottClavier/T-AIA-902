@@ -30,6 +30,15 @@ class Params:
     # Root folder where plots are saved
     savefig_folder: Path
 
+    # Root folder where models are saved
+    savemodel_folder: Path
+
+    # Run name, serves for files naming
+    run_name: str = "name"
+
+    # Run description, serves for plot titles
+    run_description: str = "description"
+
     # Epsilon value for epsilon-greedy policy
     epsilon: float = 1.0
 
