@@ -16,14 +16,14 @@ from common.plots import TaxiDriverPlots
 def main():
     params = TaxiDriverParams(
         n_episodes=250,
-        n_runs=100,
+        n_runs=1,  # attention sur le random laissez a 1
         learning_rate=0.85,
         gamma=0.99,
         epsilon=1.0,
         min_epsilon=0.001,
         random_seed=True,
         seed=123,
-        max_n_steps=50000,
+        max_n_steps=25000,
         savefig_folder=Path("./static/img/taxi_driver/"),
         savemodel_folder=Path("./static/models/taxi_driver/"),
     )
