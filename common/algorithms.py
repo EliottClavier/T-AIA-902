@@ -244,7 +244,7 @@ class Algorithm:
             steps += 1
 
             if terminated or truncated:
-                if reward == rewards.lose_reward:
+                if reward in [rewards.lose_reward, rewards.playing_reward]:
                     lost = True
                 break
 
