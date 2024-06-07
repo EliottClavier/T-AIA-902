@@ -7,7 +7,7 @@ from common.rewards import TaxiDriverRewards
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 
 from common.params import TaxiDriverParams
-from common.algorithms import QLearning, SARSA
+from common.algorithms import SARSA
 from common.policies import DecayedEpsilonGreedy
 from common.environments import TaxiDriver
 from common.plots import TaxiDriverPlots
@@ -15,7 +15,7 @@ from common.plots import TaxiDriverPlots
 
 def main():
     params = TaxiDriverParams(
-        n_episodes=10000,
+        n_episodes=100,
         n_runs=100,
         learning_rate=0.85,
         gamma=0.99,
