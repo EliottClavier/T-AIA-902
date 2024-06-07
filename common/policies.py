@@ -50,7 +50,7 @@ class EpsilonGreedy(Policy):
         :param epsilon: exploration probability
         """
 
-        if epsilon < 0 or epsilon > 1:
+        if epsilon < 0.0 or epsilon > 1.0:
             raise ValueError("Epsilon must be in the interval [0, 1].")
 
         self.epsilon = epsilon
@@ -169,7 +169,7 @@ class Softmax(Policy):
         :param tau: temperature
         """
 
-        if tau <= 0:
+        if tau < 0.0 or tau > 1.0:
             raise ValueError("Tau must be greater than 0.")
 
         self.tau = tau

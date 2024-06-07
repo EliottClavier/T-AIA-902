@@ -248,7 +248,6 @@ class UserMode:
         # Cast parameters to the correct type
         for f_name, f_def in common.params.TaxiDriverParams.__dataclass_fields__.items():
             if f_def.metadata.get("configurable", True) and f_name in self.params:
-                print(f_name, self.params[f_name], f_def.metadata.get("type"), f_def.metadata.get("optional", False))
                 if f_def.metadata.get("optional", False) and not self.params[f_name]:
                     self.params[f_name] = None
                 else:
@@ -258,6 +257,8 @@ class UserMode:
         if not self.params:
             print("No configuration to execute.")
             self.display_menu()
+
+        self.cast_params()
 
         params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
         params = params_cls(**{k: v for k, v in self.params.items() if k in self.get_constructor_parameters(params_cls)})
