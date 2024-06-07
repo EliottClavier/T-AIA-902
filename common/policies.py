@@ -103,14 +103,14 @@ class DecayedEpsilonGreedy(Policy):
         if epsilon < min_epsilon:
             raise ValueError("Initial epsilon must be greater than or equal to min epsilon.")
 
-        if epsilon < 0 or epsilon > 1:
-            raise ValueError("Initial epsilon must be in the interval [0, 1].")
+        if epsilon < 0.0 or epsilon > 1.0:
+            raise ValueError("Initial epsilon must be in the interval (0, 1).")
 
-        if min_epsilon < 0 or min_epsilon > 1:
-            raise ValueError("Min epsilon must be in the interval [0, 1].")
+        if min_epsilon < 0.0 or min_epsilon > 1.0:
+            raise ValueError("Min epsilon must be in the interval (0, 1).")
 
-        if manual_decay_rate is not None and (manual_decay_rate < 0 or manual_decay_rate >= 1):
-            raise ValueError("Decay rate must be in the interval [0, 1).")
+        if manual_decay_rate is not None and (manual_decay_rate < 0.0 or manual_decay_rate > 1.0):
+            raise ValueError("Decay rate must be in the interval (0, 1).")
 
         self.initial_epsilon = epsilon
         self.min_epsilon = min_epsilon

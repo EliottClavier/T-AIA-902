@@ -15,15 +15,12 @@ class UserMode:
 
     params: dict = {}
 
-    def __init__(self):
-        self.display_menu()
-
     def build_param_question(self, params: dict, p_name: str, p_def: dict) -> Optional[dict]:
         """
         Build a question for a parameter based on its metadata.
         :param params: Current parameters values
         :param p_name: Parameter name
-        :param p_metadata: Parameter metadata
+        :param p_def: Parameter definition
         :return: Question dictionary
         """
 
@@ -181,7 +178,7 @@ class UserMode:
                 'type': 'list',
                 'name': 'policy',
                 'message': 'Policy',
-                'choices': [None] + self.get_classes(common.policies.__name__, common.policies.Policy)
+                'choices': self.get_classes(common.policies.__name__, common.policies.Policy)
             }
         ]
 
@@ -194,6 +191,8 @@ class UserMode:
                 if question:
                     self.params = self.params | prompt(question)
 
+        print("Configuration done.")
+
         self.ask_action("save")
 
     def load(self):
@@ -204,6 +203,8 @@ class UserMode:
         try:
             with open(self.CONFIGURATION_PATH, "r") as f:
                 self.params = json.load(f)
+
+            print("Configuration loaded.")
 
             self.ask_action("execute")
         except FileNotFoundError:
@@ -222,6 +223,8 @@ class UserMode:
         with open(self.CONFIGURATION_PATH, "w") as f:
             f.write(json.dumps(self.params))
 
+        print("Configuration saved.")
+
         self.ask_action("execute")
 
     def ask_action(self, action: str):
@@ -233,7 +236,7 @@ class UserMode:
             {
                 'type': 'confirm',
                 'name': action,
-                'message': f'Do you want to {action} this configuration?'
+                'message': f'Do you want to {action} this configuration ?'
             }
         ]
 
@@ -273,11 +276,14 @@ class UserMode:
         plots_cls = self.get_class_from_module(common.plots.__name__, f"{self.params['environment']}Plots")
         plots_cls.plot(policy=algorithm.computed_policy, algorithm=algorithm, env=env, params=params)
 
+        print("Execution done.")
+
         self.display_menu()
 
-    def exit(self):
+    @staticmethod
+    def exit():
         """
-        Method to exit the program. Pass since there is no logic to execute.
+        Method to exit the program.
         :return: None
         """
-        pass
+        sys.exit(0)
