@@ -50,7 +50,7 @@ class EpsilonGreedy(Policy):
         :param epsilon: exploration probability
         """
 
-        if epsilon < 0 or epsilon > 1:
+        if epsilon < 0.0 or epsilon > 1.0:
             raise ValueError("Epsilon must be in the interval [0, 1].")
 
         self.epsilon = epsilon
@@ -82,37 +82,37 @@ class EpsilonGreedy(Policy):
 
 class DecayedEpsilonGreedy(Policy):
 
-    initial_epsilon: float
+    epsilon: float
     min_epsilon: float
     n_episodes: int
     current_episode: int = 0
     linear: bool = False
     manual_decay_rate: float | None = None
 
-    def __init__(self, initial_epsilon: float, min_epsilon: float, n_episodes: int,
+    def __init__(self, epsilon: float, min_epsilon: float, n_episodes: int,
                  linear: bool = False, manual_decay_rate: float = None) -> None:
         """
         Initialize the policy.
-        :param initial_epsilon: starting exploration probability
+        :param epsilon: starting exploration probability
         :param min_epsilon: minimum exploration probability
         :param n_episodes: number of episodes
         :param linear: linear decay
         :param manual_decay_rate: manual decay rate
         """
 
-        if initial_epsilon < min_epsilon:
+        if epsilon < min_epsilon:
             raise ValueError("Initial epsilon must be greater than or equal to min epsilon.")
 
-        if initial_epsilon < 0 or initial_epsilon > 1:
-            raise ValueError("Initial epsilon must be in the interval [0, 1].")
+        if epsilon < 0.0 or epsilon > 1.0:
+            raise ValueError("Initial epsilon must be in the interval (0, 1).")
 
-        if min_epsilon < 0 or min_epsilon > 1:
-            raise ValueError("Min epsilon must be in the interval [0, 1].")
+        if min_epsilon < 0.0 or min_epsilon > 1.0:
+            raise ValueError("Min epsilon must be in the interval (0, 1).")
 
-        if manual_decay_rate is not None and (manual_decay_rate < 0 or manual_decay_rate >= 1):
-            raise ValueError("Decay rate must be in the interval [0, 1).")
+        if manual_decay_rate is not None and (manual_decay_rate < 0.0 or manual_decay_rate > 1.0):
+            raise ValueError("Decay rate must be in the interval (0, 1).")
 
-        self.initial_epsilon = initial_epsilon
+        self.initial_epsilon = epsilon
         self.min_epsilon = min_epsilon
         self.n_episodes = n_episodes
         self.linear = linear
@@ -169,7 +169,7 @@ class Softmax(Policy):
         :param tau: temperature
         """
 
-        if tau <= 0:
+        if tau < 0.0 or tau > 1.0:
             raise ValueError("Tau must be greater than 0.")
 
         self.tau = tau
