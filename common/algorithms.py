@@ -5,9 +5,9 @@ from typing import List, Tuple
 import numpy as np
 from gymnasium import Env
 
+from common.params import Params
 from common.policies import Policy
 from common.rewards import RewardFunction, Rewards
-from common.params import Params
 
 
 @dataclass
@@ -339,7 +339,7 @@ class QLearning(Algorithm):
         :return: None
         """
         self.Q[state, action] = self.Q[state, action] + self.params.learning_rate * (
-            reward + self.params.gamma * np.max(self.Q[next_state, :]) - self.Q[state, action]
+                reward + self.params.gamma * np.max(self.Q[next_state, :]) - self.Q[state, action]
         )
 
     def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> int or None:
@@ -394,10 +394,12 @@ class SARSA(Algorithm):
 
         next_state, done = self.step(episode, state, episode_history)
         next_action, _ = self.policy.choose_action(self.env, next_state, self.Q)
-        self.update_action_value_function(state, episode_history.actions[-1], episode_history.rewards[-1], next_state, next_action)
+        self.update_action_value_function(state, episode_history.actions[-1], episode_history.rewards[-1], next_state,
+                                          next_action)
         return next_state, done
 
-    def update_action_value_function(self, state: int, action: int, reward: float, next_state: int, next_action: int) -> None:
+    def update_action_value_function(self, state: int, action: int, reward: float, next_state: int,
+                                     next_action: int) -> None:
         """
         Update the action-value function.
         :param state: current state
@@ -408,7 +410,7 @@ class SARSA(Algorithm):
         :return: None
         """
         self.Q[state, action] = self.Q[state, action] + self.params.learning_rate * (
-            reward + self.params.gamma * self.Q[next_state, next_action] - self.Q[state, action]
+                reward + self.params.gamma * self.Q[next_state, next_action] - self.Q[state, action]
         )
 
     def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
@@ -420,4 +422,40 @@ class SARSA(Algorithm):
         """
         self.historic.average_rewards.append(np.mean(episode_history.rewards))
         self.historic.episodes_histories.append(episode_history)
+        super().complete_episode(episode, episode_history)
+
+
+class BruteForce(Algorithm):
+    def __init__(self, env: Env, params: Params, policy: Policy, reward_function: RewardFunction = None) -> None:
+        """
+        Initialize the algorithm.
+        :param env: environment
+        :param params: parameters to run the algorithm with
+        :param policy: policy to use
+        :param reward_function: reward function to use, can be None
+        :return: None
+        """
+        super().__init__(env, params, policy, reward_function)
+
+    def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> int or None:
+        """
+        Method to play the game.
+        :param episode: episode number
+        :param state: current state
+        :param episode_history: history of the episode
+        :return: next state or None if the episode is done
+        """
+
+        return self.step(episode, state, episode_history)
+
+    def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
+        """
+        Method to complete the episode.
+        :param episode: episode number
+        :param episode_history: history of the episode
+        :return: None
+        """
+        self.historic.average_rewards.append(np.mean(episode_history.rewards))
+        self.historic.episodes_histories.append(episode_history)
+        print(f"Episode {episode} - Average reward: {np.mean(episode_history.rewards)} - steps: {len(episode_history.rewards)}")
         super().complete_episode(episode, episode_history)
