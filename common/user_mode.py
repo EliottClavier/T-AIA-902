@@ -1,9 +1,11 @@
 import sys
+import re
 import inspect
 import os
 import json
-from typing import Optional
+from typing import Optional, Any
 
+import cv2
 from InquirerPy import prompt
 
 import common
@@ -149,6 +151,7 @@ class UserMode:
                     {"name": "Load configuration", "value": "load"},
                     {"name": "Save configuration", "value": "save"},
                     {"name": "Execute", "value": "execute"},
+                    {"name": "Watch an episode", "value": "watch"},
                     {"name": "Exit", "value": "exit"}
                 ]
             }
@@ -253,12 +256,15 @@ class UserMode:
                 else:
                     self.params[f_name] = f_def.metadata.get("type")(self.params[f_name])
 
-    def execute(self):
+    def check_params(self):
         if not self.params:
             print("No configuration to execute.")
             self.display_menu()
 
         self.cast_params()
+
+    def execute(self):
+        self.check_params()
 
         params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
         params = params_cls(**{k: v for k, v in self.params.items() if k in self.get_constructor_parameters(params_cls)})
@@ -280,6 +286,97 @@ class UserMode:
         print("Execution done.")
 
         self.display_menu()
+
+    @staticmethod
+    def read_video(filename: str, params: Any):
+        """
+        Read a video file with OpenCV.
+        :param filename: filename of the video
+        :param params: parameters
+        :return: None
+        """
+        cap = cv2.VideoCapture(os.path.join(params.saveepisode_folder, filename))
+
+        cv2.namedWindow('Episode', cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty('Episode', cv2.WND_PROP_TOPMOST, 1)
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+
+            if not ret:
+                break
+
+            cv2.imshow("Episode", frame)
+
+            if cv2.waitKey(60) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+
+    @staticmethod
+    def transform_filename(pattern: str, replacement: str, filename: str):
+        """
+        Transform a filename using a pattern and a replacement.
+        :param pattern: pattern to match
+        :param replacement: replacement
+        :param filename: filename to transform
+        :return: transformed filename
+        """
+        return re.sub(pattern, replacement, filename)
+
+    @staticmethod
+    def extract_episode_number(file_name):
+        """
+        Extract the episode number from a filename.
+        :param file_name: filename
+        :return: episode number
+        """
+        return int(file_name.split('-')[-1].split('.')[0])
+
+    def watch(self, last_episode_watched: Optional[str] = None):
+        """
+        Watch an episode save during the training.
+        :return: None
+        """
+        self.check_params()
+
+        params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
+        params = params_cls(
+            **{k: v for k, v in self.params.items() if k in self.get_constructor_parameters(params_cls)})
+
+        pattern = r'rl-video-episode-(\d+)\.mp4'
+        replacement = r'Episode \1'
+
+        files = [f for f in os.listdir(params.saveepisode_folder) if re.match(r'rl-video-episode-(\d+)\.mp4', f)]
+        filenames = [self.transform_filename(pattern, replacement, filename) for filename in files]
+
+        questions = [
+            {
+                "type": "list",
+                "name": "episode",
+                "message": "Select an episode",
+                "default": last_episode_watched,
+                "choices": [
+                    {
+                        "name": "Back",
+                        "value": None
+                    }
+                ] + [
+                    {
+                        "name": name,
+                        "value": value
+                    } for name, value in sorted(zip(filenames, files), key=lambda x: self.extract_episode_number(x[1]))
+                ]
+            }
+        ]
+
+        selected_episode = prompt(questions)["episode"]
+        if selected_episode:
+            self.read_video(selected_episode, params)
+            self.watch(selected_episode)
+        else:
+            self.display_menu()
 
     @staticmethod
     def exit():

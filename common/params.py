@@ -181,7 +181,7 @@ class Params:
 
     # Root folder where plots are saved
     savefig_folder: Path = field(
-        default=Path("./static/img/taxi_driver/"),
+        default=Path("./static/img/"),
         metadata={
             "description": "Root folder where plots are saved",
             "type": Path,
@@ -191,9 +191,18 @@ class Params:
 
     # Root folder where models are saved
     savemodel_folder: Path = field(
-        default=Path("./static/models/taxi_driver/"),
+        default=Path("./static/models/"),
         metadata={
             "description": "Root folder where models are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
+    saveepisode_folder: Path = field(
+        default=Path("./static/episodes/"),
+        metadata={
+            "description": "Root folder where episodes are saved",
             "type": Path,
             "configurable": False
         }
@@ -235,6 +244,35 @@ class FrozenLakeParams(Params):
         }
     )
 
+    # Root folder where plots are saved
+    savefig_folder: Path = field(
+        default=Path("./static/img/frozen_lake/"),
+        metadata={
+            "description": "Root folder where plots are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
+    # Root folder where models are saved
+    savemodel_folder: Path = field(
+        default=Path("./static/models/frozen_lake/"),
+        metadata={
+            "description": "Root folder where models are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
+    saveepisode_folder: Path = field(
+        default=Path("./static/episodes/frozen_lake/"),
+        metadata={
+            "description": "Root folder where episodes are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
 
 @dataclass
 class TaxiDriverParams(Params):
@@ -248,6 +286,36 @@ class TaxiDriverParams(Params):
         metadata={
             "description": "Map size",
             "type": Tuple[int],
+            "configurable": False
+        }
+    )
+
+    # Root folder where plots are saved
+    savefig_folder: Path = field(
+        default=Path("./static/img/taxi_driver/"),
+        metadata={
+            "description": "Root folder where plots are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
+    # Root folder where models are saved
+    savemodel_folder: Path = field(
+        default=Path("./static/models/taxi_driver/"),
+        metadata={
+            "description": "Root folder where models are saved",
+            "type": Path,
+            "configurable": False
+        }
+    )
+
+    # Root folder where episodes are saved
+    saveepisode_folder: Path = field(
+        default=Path("./static/episodes/taxi_driver/"),
+        metadata={
+            "description": "Root folder where episodes are saved",
+            "type": Path,
             "configurable": False
         }
     )
