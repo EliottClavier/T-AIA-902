@@ -128,6 +128,8 @@ class Algorithm:
 
             self.complete_episode(episode, episode_history)
 
+        self.env.close()
+
     def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
         """
         Method to complete the episode. Must be overridden if updating the policy has to be made at the end of the episode.
