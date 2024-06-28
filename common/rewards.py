@@ -107,6 +107,6 @@ class TaxiDriverRewards(Rewards):
     """
     Default rewards for the TaxiDriver environment.
     """
-    win_reward: float = 20.0
-    lose_reward: float = -10.0
-    playing_reward: float = -1.0
+    win_reward: float = 20
+    lose_reward: float = -10
+    playing_reward: float = -1

@@ -7,7 +7,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.
 from common.params import TaxiDriverParams
 from common.algorithms import QLearning, SARSA, BruteForce
 from common.policies import DecayedEpsilonGreedy, Random
-
 from common.environments import TaxiDriver
 from common.plots import TaxiDriverPlots
 
@@ -30,11 +29,15 @@ def main():
 
     env = TaxiDriver(params).env
 
-    algorithm = BruteForce(
+    algorithm = QLearning(
         env=env,
         params=params,
-        policy=Random(),
-
+        policy=DecayedEpsilonGreedy(
+            epsilon=params.epsilon,
+            min_epsilon=params.min_epsilon,
+            n_episodes=params.n_episodes,
+            manual_decay_rate=params.manual_decay_rate,
+        ),
     )
 
     algorithm.run()
