@@ -1,20 +1,19 @@
 import os
 from typing import Tuple
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from gymnasium import Env
 
-from common.params import Params
 from common.algorithms import Algorithm, AlgorithmHistory
+from common.params import Params
 from common.rewards import Rewards, FrozenLakeRewards, TaxiDriverRewards
 
 sns.set_theme()
 
 
 class Plots:
-
     rewards: Rewards = Rewards()
 
     @staticmethod
@@ -55,7 +54,8 @@ class Plots:
         wins_losses = [n_runs - n_losses, n_losses]
         ax.bar(["Win", "Loss"], wins_losses)
         ax.set_ylabel("Games")
-        ax.set_title(f"Win vs Losses ({wins_losses[0]}/{n_runs} games won, {(1 - n_losses / n_runs) * 100:.2f}% win rate )")
+        ax.set_title(
+            f"Win vs Losses ({wins_losses[0]}/{n_runs} games won, {(1 - n_losses / n_runs) * 100:.2f}% win rate )")
 
     @staticmethod
     def plot_games_steps(steps: list, steps_when_winning: list, n_runs: int, ax: plt.Axes) -> None:
@@ -121,7 +121,6 @@ class Plots:
         ax.set_ylabel("Cumulative reward")
         ax.set_title("Cumulative reward over episodes")
 
-
     @staticmethod
     def plot_episodes_number_of_steps(history: AlgorithmHistory, ax: plt.Axes) -> None:
         """
@@ -148,7 +147,7 @@ class Plots:
 
         sns.heatmap(
             states.reshape(params.map_size[0], params.map_size[1]),
-            #annot=policy_directions,
+            # annot=policy_directions,
             fmt="",
             ax=ax,
             cmap=sns.color_palette("Blues", as_cmap=True),
@@ -168,7 +167,6 @@ class Plots:
 
 
 class FrozenLakePlots(Plots):
-
     rewards: Rewards = FrozenLakeRewards()
 
     @staticmethod
@@ -254,7 +252,6 @@ class FrozenLakePlots(Plots):
 
 
 class TaxiDriverPlots(Plots):
-
     rewards: Rewards = TaxiDriverRewards()
 
     @staticmethod
@@ -267,7 +264,6 @@ class TaxiDriverPlots(Plots):
         :param params: parameters used
         :return: None
         """
-
         fig, ax = plt.subplots(3, 2, figsize=(16, 16))
         fig.suptitle(params.run_description)
 

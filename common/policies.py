@@ -41,7 +41,6 @@ class Policy:
 
 
 class EpsilonGreedy(Policy):
-
     epsilon: float
 
     def __init__(self, epsilon: float):
@@ -81,7 +80,6 @@ class EpsilonGreedy(Policy):
 
 
 class DecayedEpsilonGreedy(Policy):
-
     epsilon: float
     min_epsilon: float
     n_episodes: int
@@ -127,7 +125,8 @@ class DecayedEpsilonGreedy(Policy):
         :return: action
         """
         if self.linear:
-            epsilon = self.initial_epsilon - (self.initial_epsilon - self.min_epsilon) * self.current_episode / self.n_episodes
+            epsilon = self.initial_epsilon - (
+                        self.initial_epsilon - self.min_epsilon) * self.current_episode / self.n_episodes
         else:
             epsilon = max(self.min_epsilon, self.initial_epsilon * ((1 - self.decay_rate) ** self.current_episode))
 
@@ -160,7 +159,6 @@ class DecayedEpsilonGreedy(Policy):
 
 
 class Softmax(Policy):
-
     tau: float
 
     def __init__(self, tau: float) -> None:
@@ -194,3 +192,8 @@ class Softmax(Policy):
         :return: description
         """
         return f"{self.__class__.__name__} - {self.tau} τ"
+
+
+class Random(Policy):
+    def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
+        return env.action_space.sample(), 0
