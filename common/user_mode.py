@@ -83,7 +83,8 @@ class UserMode:
             return True
         try:
             param_type(value)
-            return min_value is not None and param_type(value) >= min_value and max_value is not None and float(value) <= max_value
+            return ((min_value is not None and param_type(value) >= min_value and max_value is not None and float(value) <= max_value)
+                    or (min_value is None and max_value is None))
         except ValueError:
             return False
 

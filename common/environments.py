@@ -52,7 +52,7 @@ class Game:
         :param n: maximum number of steps
         :return: None
         """
-        self.env._max_episode_steps = n
+        self.env.spec.max_episode_steps = n
 
     @staticmethod
     def scale_max_n_steps(env: Env) -> int:
