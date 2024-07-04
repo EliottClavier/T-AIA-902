@@ -3,7 +3,7 @@ from abc import abstractmethod
 import gymnasium as gym
 from gymnasium import Env
 from gymnasium.envs.toy_text.frozen_lake import generate_random_map
-from gymnasium.wrappers import RecordVideo, capped_cubic_video_schedule
+from gymnasium.wrappers import RecordVideo, capped_cubic_video_schedule, TimeLimit
 
 from common.params import Params, FrozenLakeParams, TaxiDriverParams
 from common.taxi import TaxiEnv
@@ -37,6 +37,12 @@ class Game:
         if params.scale_n_steps:
             self.set_max_episode_steps(self.scale_max_n_steps(self.env))
 
+        self.env = RecordVideo(
+            self.env,
+            video_folder=str(params.saveepisode_folder),
+            episode_trigger=capped_cubic_video_schedule
+        )
+
     @abstractmethod
     def make(self, params: Params) -> Env:
         """
@@ -52,7 +58,7 @@ class Game:
         :param n: maximum number of steps
         :return: None
         """
-        self.env.spec.max_episode_steps = n
+        self.env = TimeLimit(self.env, max_episode_steps=n)
 
     @staticmethod
     def scale_max_n_steps(env: Env) -> int:
@@ -79,19 +85,13 @@ class FrozenLake(Game):
         :return: environment
         """
         # Get map_size from kwargs if it exists, otherwise default to 4
-        env = gym.make(
+        return gym.make(
             self.name,
             is_slippery=params.is_slippery,
             render_mode=params.render_mode,
             desc=generate_random_map(
                 size=params.map_size[0], p=params.proba_frozen, seed=params.seed
             ),
-        )
-
-        return RecordVideo(
-            env,
-            video_folder=str(params.saveepisode_folder),
-            episode_trigger=capped_cubic_video_schedule
         )
 
 
@@ -111,13 +111,7 @@ class TaxiDriver(Game):
         :return: environment
         """
 
-        env = gym.make(
+        return gym.make(
             self.name,
             render_mode=params.render_mode,
-        )
-
-        return RecordVideo(
-            env,
-            video_folder=str(params.saveepisode_folder),
-            episode_trigger=capped_cubic_video_schedule
         )
