@@ -31,6 +31,7 @@ class Game:
 
         self.render_mode = params.render_mode
 
+        # TODO: Could be deleted since we register custom envs
         if v := params.max_n_steps:
             self.set_max_episode_steps(v)
 
@@ -76,7 +77,8 @@ class FrozenLake(Game):
     """
 
     # Name of the game
-    name: str = "FrozenLake-v1"
+    name: str = "Custom-FrozenLake-v1"
+    #name: str = "FrozenLake-v1"
 
     def make(self, params: FrozenLakeParams) -> Env:
         """
@@ -84,6 +86,13 @@ class FrozenLake(Game):
         :param params: parameters for the game
         :return: environment
         """
+
+        gym.envs.register(
+            id=self.name,
+            entry_point='gymnasium.envs.toy_text:FrozenLakeEnv',
+            max_episode_steps=params.max_n_steps,
+        )
+
         # Get map_size from kwargs if it exists, otherwise default to 4
         return gym.make(
             self.name,
@@ -101,8 +110,8 @@ class TaxiDriver(Game):
     """
 
     # Name of the game
-    #name: str = "Custom-TaxiDriver-v1"
-    name: str = "Taxi-v3"
+    name: str = "Custom-TaxiDriver-v3"
+    #name: str = "Taxi-v3"
 
     def make(self, params: TaxiDriverParams) -> Env:
         """
@@ -110,6 +119,12 @@ class TaxiDriver(Game):
         :param params: parameters for the game
         :return: environment
         """
+
+        gym.envs.register(
+            id=self.name,
+            entry_point='gymnasium.envs.toy_text:TaxiEnv',
+            max_episode_steps=params.max_n_steps,
+        )
 
         return gym.make(
             self.name,
