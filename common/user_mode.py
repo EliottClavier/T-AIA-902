@@ -142,7 +142,7 @@ class UserMode:
             if parameter.annotation != inspect._empty
         }
 
-    def display_menu(self):
+    def display_menu(self) -> None:
         """
         Display the main menu.
         :return: None
@@ -166,7 +166,7 @@ class UserMode:
 
         getattr(self, prompt(questions)["mode"])()
 
-    def configure(self):
+    def configure(self) -> None:
         """
         Configure all the parameters to run an experiment.
         :return: None
@@ -207,7 +207,7 @@ class UserMode:
 
         self.ask_action("save")
 
-    def load(self, initialize: bool = False):
+    def load(self, initialize: bool = False) -> None:
         """
         Load a configuration from a file.
         :param initialize: indicated if load is called when initializing the program
@@ -228,7 +228,7 @@ class UserMode:
             print("No configuration file found.")
             self.display_menu()
 
-    def save(self):
+    def save(self) -> None:
         """
         Save the current configuration to a file.
         :return: None
@@ -244,7 +244,7 @@ class UserMode:
 
         self.ask_action("execute")
 
-    def ask_action(self, action: str):
+    def ask_action(self, action: str) -> None:
         """
         Ask the user if they want to execute the current configuration.
         :return: None
@@ -261,7 +261,12 @@ class UserMode:
             getattr(self, action)()
         getattr(self, "display_menu")()
 
-    def cast_params(self):
+    def cast_params(self) -> None:
+        """
+        Since inquirerpy only returns strings, we need to cast the parameters to the correct type.
+        Types are describe in the metadata of the parameters from the dataclass.
+        :return: None
+        """
         params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
 
         # Cast parameters to the correct type
@@ -272,14 +277,24 @@ class UserMode:
                 else:
                     self.params[f_name] = f_def.metadata.get("type")(self.params[f_name])
 
-    def check_params(self):
+    def check_params(self) -> None:
+        """
+        Check if the current configuration is valid and can be executed.
+        :return: None
+        """
         if not self.params:
             print("No configuration to execute.")
             self.display_menu()
 
         self.cast_params()
 
-    def execute(self):
+    def execute(self) -> None:
+        """
+        Execute the current configuration. It will create an environment, a policy and an algorithm based on the
+        configuration and run the algorithm. It will then plot the results.
+        An example of the workflow can be found in the gymm.py file of taxi_driver or frozen_lake directories.
+        :return:
+        """
         self.check_params()
 
         params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
@@ -348,7 +363,7 @@ class UserMode:
         return re.sub(pattern, replacement, filename)
 
     @staticmethod
-    def extract_episode_number(file_name):
+    def extract_episode_number(file_name) -> int:
         """
         Extract the episode number from a filename.
         :param file_name: filename
@@ -356,7 +371,7 @@ class UserMode:
         """
         return int(file_name.split('-')[-1].split('.')[0])
 
-    def watch(self, last_episode_watched: Optional[str] = None):
+    def watch(self, last_episode_watched: Optional[str] = None) -> None:
         """
         Watch an episode save during the training.
         :return: None
@@ -369,7 +384,13 @@ class UserMode:
         pattern = r'rl-video-episode-(\d+)\.mp4'
         replacement = r'Episode \1'
 
-        files = [f for f in os.listdir(params.saveepisode_folder) if re.match(r'rl-video-episode-(\d+)\.mp4', f)]
+        try:
+            files = [f for f in os.listdir(params.saveepisode_folder) if re.match(r'rl-video-episode-(\d+)\.mp4', f)]
+        except FileNotFoundError:
+            print("No episodes to watch.")
+            print(f"Episodes should be located in {os.path.abspath(params.saveepisode_folder)}")
+            self.display_menu()
+
         filenames = [self.transform_filename(pattern, replacement, filename) for filename in files]
 
         questions = [
@@ -401,7 +422,11 @@ class UserMode:
             self.display_menu()
 
     @staticmethod
-    def ask_number_of_games():
+    def ask_number_of_games() -> int:
+        """
+        Ask the user the number of games to play after loading a model.
+        :return: number of games
+        """
         return int(prompt([
             {
                 "type": "number",
@@ -412,13 +437,22 @@ class UserMode:
             }
         ])["n_games"])
 
-    def load_play_model(self):
+    def load_play_model(self) -> None:
+        """
+        Load a trained model and play with it.
+        :return: None
+        """
         self.check_params()
 
         params_cls = self.get_class_from_module(common.params.__name__, f"{self.params['environment']}Params")
         params = params_cls(**{k: v for k, v in self.params.items() if k in self.get_constructor_parameters(params_cls)})
 
-        filenames = os.listdir(params.savemodel_folder)
+        try:
+            filenames = os.listdir(params.savemodel_folder)
+        except FileNotFoundError:
+            print("No models to play with.")
+            print(f"Models should be loaded from {os.path.abspath(params.savemodel_folder)}")
+            self.display_menu()
 
         questions = [
             {
