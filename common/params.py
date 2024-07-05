@@ -139,6 +139,18 @@ class Params:
         }
     )
 
+    # Temperature for softmax policy
+    theta: float = field(
+        default=0.01,
+        metadata={
+            "description": "Convergence threshold  (between 0 and 1)",
+            "type": float,
+            "min": 0.0,
+            "max": 1.0,
+            "prerequisite": ("policy", ValueIterationPolicy.__name__)
+        }
+    )
+
     # Render mode
     render_mode: str = field(
         default="rgb_array",
