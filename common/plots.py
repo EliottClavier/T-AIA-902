@@ -287,3 +287,35 @@ class TaxiDriverPlots(Plots):
             os.makedirs(params.savefig_folder)
 
         fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")
+
+    @staticmethod
+    def plot_brute_force_plot(policy: np.ndarray, env: Env, algorithm: Algorithm, params: Params) -> None:
+        """
+        Plot the results of the algorithm, the policy, results of games and more
+        :param policy: policy to plot
+        :param env: environment
+        :param algorithm: algorithm used
+        :param params: parameters used
+        :return: None
+        """
+
+        fig, ax = plt.subplots(1, 2, figsize=(16, 16))
+        fig.suptitle(params.run_description)
+
+        steps = [len(episode.actions) for episode in algorithm.historic.episodes_histories]
+        ax[0].hist(steps)
+        ax[0].set_xlabel("Steps")
+        ax[0].set_title("Number of steps over episodes")
+
+        cumulative_rewards = [sum(episode.rewards) for episode in algorithm.historic.episodes_histories]
+        ax[1].hist(cumulative_rewards)
+        ax[1].set_xlabel("Cumulative reward")
+        ax[1].set_title("Cumulative reward over episodes")
+
+        plt.tight_layout()
+        plt.show()
+
+        if not os.path.exists(params.savefig_folder):
+            os.makedirs(params.savefig_folder)
+
+        fig.savefig(params.savefig_folder / params.run_name, bbox_inches="tight")
