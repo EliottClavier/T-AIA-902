@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass, field
+from email import policy
 from typing import List, Tuple
 
 import numpy as np
@@ -482,7 +483,8 @@ class BruteForce(Algorithm):
         """
         self.historic.average_rewards.append(np.mean(episode_history.rewards))
         self.historic.episodes_histories.append(episode_history)
-        print(f"Episode {episode} - Average reward: {np.mean(episode_history.rewards)} - steps: {len(episode_history.rewards)}")
+        print(
+            f"Episode {episode} - Average reward: {np.mean(episode_history.rewards)} - steps: {len(episode_history.rewards)}")
         super().complete_episode(episode, episode_history)
 
 
@@ -522,13 +524,9 @@ class ValueIteration(Algorithm):
         """
         Use the computed policy to play one step in the environment.
         """
-        action = np.argmax(self.Q[state])
+        action = self.policy.choose_action(self.env, state, self.Q)
         next_state, reward, terminated, truncated, _ = self.env.step(action)
         episode_history.states.append(next_state)
         episode_history.actions.append(action)
         episode_history.rewards.append(reward)
         return next_state, terminated or truncated
-
-
-
-

@@ -199,15 +199,23 @@ class Random(Policy):
         return env.action_space.sample(), 0
 
 
-class ValueIterationPolicy(Policy):
-    def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
-        while True:
-            delta = 0
-            for s in range(n_states):
-                v = V[s]
-                V[s] = max([sum([p * (r + gamma * V[s_]) for p, s_, r, _ in env.P[s][a]]) for a in range(n_actions)])
-                delta = max(delta, abs(v - V[s]))
-            if delta < theta:
-                break
+class Max(Policy):
 
+    def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> int:
+        """
+        Epsilon-greedy policy.
+        :param env: environment
+        :param state: current state
+        :param Q: Q-table
+        :return: action
+        """
+        return np.argmax(Q[state])
+
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return f"{self.__class__.__name__}"
 

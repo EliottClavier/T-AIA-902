@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Tuple, Optional
 
-from common.policies import DecayedEpsilonGreedy, Softmax, EpsilonGreedy
+from common.policies import DecayedEpsilonGreedy, Softmax, EpsilonGreedy, Random
 
 
 @dataclass
@@ -147,7 +147,7 @@ class Params:
             "type": float,
             "min": 0.0,
             "max": 1.0,
-            "prerequisite": ("policy", ValueIterationPolicy.__name__)
+            "prerequisite": ("policy", Random.__name__)
         }
     )
 
