@@ -157,7 +157,7 @@ class UserMode:
                     {"name": "Load configuration", "value": "load"},
                     {"name": "Save configuration", "value": "save"},
                     {"name": "Execute", "value": "execute"},
-                    {"name": "Watch an episode", "value": "watch"},
+                    {"name": "Watch episode from last run", "value": "watch"},
                     {"name": "Load and play with a trained model", "value": "load_play_model"},
                     {"name": "Exit", "value": "exit"}
                 ]
@@ -373,7 +373,7 @@ class UserMode:
 
     def watch(self, last_episode_watched: Optional[str] = None) -> None:
         """
-        Watch an episode save during the training.
+        Watch an episode save during the last training.
         :return: None
         """
         self.check_params()

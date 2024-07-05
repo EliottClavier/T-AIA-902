@@ -39,6 +39,10 @@ class Game:
             self.set_max_episode_steps(self.scale_max_n_steps(self.env))
 
         if should_record:
+            if params.saveepisode_folder.exists():
+                for f in params.saveepisode_folder.iterdir():
+                    f.unlink()
+
             self.env = RecordVideo(
                 self.env,
                 video_folder=str(params.saveepisode_folder),
@@ -91,7 +95,7 @@ class FrozenLake(Game):
         gym.envs.register(
             id=self.name,
             entry_point='gymnasium.envs.toy_text:FrozenLakeEnv',
-            max_episode_steps=params.max_n_steps,
+            max_episode_steps=params.max_n_steps or 200,
         )
 
         # Get map_size from kwargs if it exists, otherwise default to 4
@@ -124,7 +128,7 @@ class TaxiDriver(Game):
         gym.envs.register(
             id=self.name,
             entry_point='gymnasium.envs.toy_text:TaxiEnv',
-            max_episode_steps=params.max_n_steps,
+            max_episode_steps=params.max_n_steps or 200,
         )
 
         return gym.make(
