@@ -20,7 +20,7 @@ class Game:
     # Name of the game
     name: str
 
-    def __init__(self, params: Params) -> None:
+    def __init__(self, params: Params, should_record: bool = True) -> None:
         """
         Initialize the game.
         :param params: parameters for the game
@@ -38,11 +38,12 @@ class Game:
         if params.scale_n_steps:
             self.set_max_episode_steps(self.scale_max_n_steps(self.env))
 
-        self.env = RecordVideo(
-            self.env,
-            video_folder=str(params.saveepisode_folder),
-            episode_trigger=capped_cubic_video_schedule
-        )
+        if should_record:
+            self.env = RecordVideo(
+                self.env,
+                video_folder=str(params.saveepisode_folder),
+                episode_trigger=capped_cubic_video_schedule
+            )
 
     @abstractmethod
     def make(self, params: Params) -> Env:
