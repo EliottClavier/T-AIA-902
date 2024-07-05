@@ -491,59 +491,44 @@ class ValueIteration(Algorithm):
     Value Iteration algorithm.
     """
 
-    def __init__(self, env: Env, params: Params, policy: Policy, reward_function: RewardFunction = None) -> None:
-        """
-        Initialize the algorithm.
-        :param env: environment
-        :param params: parameters to run the algorithm with
-        :param policy: policy to use
-        :param reward_function: reward function to use, can be None
-        :return: None
-        """
+    def __init__(self, env: Env, params: Params, policy: Policy, reward_function: RewardFunction = None):
         super().__init__(env, params, policy, reward_function)
+        self.V = np.zeros(self.env.observation_space.n)  # Initialize the value table
 
-    def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> int or None:
+    def run(self):
         """
-        Method to play the game.
-        :param episode: episode number
-        :param state: current state
-        :param episode_history: history of the episode
-        :return: next state or None if the episode is done
+        Perform value iteration to find the optimal policy.
         """
+        while True:
+            delta = 0
+            for s in range(self.env.observation_space.n):
+                v = self.V[s]
+                max_value = max([sum([p * (r + self.params.gamma * self.V[s_])
+                                      for p, s_, r, _ in self.env.P[s][a]])
+                                 for a in range(self.env.action_space.n)])
+                self.V[s] = max_value
+                delta = max(delta, abs(v - max_value))
+            if delta < self.params.theta:  # convergence threshold
+                break
 
-        next_state, done = self.step(episode, state, episode_history)
-        next_action, _ = self.policy.choose_action(self.env, next_state, self.Q)
-        self.update_action_value_function(state, episode_history.actions[-1], episode_history.rewards[-1], next_state,
-                                          next_action)
-        return next_state, done
+        # Once the value function has converged, extract the policy
+        self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
+        for s in range(self.env.observation_space.n):
+            self.Q[s] = [sum([p * (r + self.params.gamma * self.V[s_])
+                              for p, s_, r, _ in self.env.P[s][a]])
+                         for a in range(self.env.action_space.n)]
 
+    def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
+        """
+        Use the computed policy to play one step in the environment.
+        """
+        action = np.argmax(self.Q[state])
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+        episode_history.states.append(next_state)
+        episode_history.actions.append(action)
+        episode_history.rewards.append(reward)
+        return next_state, terminated or truncated
 
-    """Utilser cette fonction pour mettre a jour la Q-table selon les rewards"""
-    def update_action_value_function(self, state: int, action: int, reward: float, next_state: int,
-                                     next_action: int) -> None:
-        """
-        Update the action-value function.
-        :param state: current state
-        :param action: action
-        :param reward: reward
-        :param next_state: next state
-        :param next_action: next action
-        :return: None
-        """
-        self.Q[state, action] = self.Q[state, action] + self.params.learning_rate * (
-                reward + self.params.gamma * self.Q[next_state, next_action] - self.Q[state, action]
-        )
-
-    def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
-        """
-        Method to complete the episode.
-        :param episode: episode number
-        :param episode_history: history of the episode
-        :return: None
-        """
-        self.historic.average_rewards.append(np.mean(episode_history.rewards))
-        self.historic.episodes_histories.append(episode_history)
-        super().complete_episode(episode, episode_history)
 
 
 
