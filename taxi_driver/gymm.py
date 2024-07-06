@@ -44,7 +44,7 @@ def main():
     algorithm = ValueIteration(
         env=env,
         params=params,
-        policy=Max()  # Random policy is a placeholder, not used by ValueIteration
+        policy=Max() 
     )
 
     algorithm.run()
