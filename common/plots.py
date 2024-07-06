@@ -182,7 +182,7 @@ class FrozenLakePlots(Plots):
         fig, ax = plt.subplots(4, 2, figsize=(16, 16))
         fig.suptitle(params.run_description)
 
-        Plots.plot_last_frame(env, ax[0][0])
+        #Plots.plot_last_frame(env, ax[0][0])
         FrozenLakePlots.plot_policy_map(policy, params, ax[0][1])
 
         Plots.plot_epsilons(algorithm.historic.epsilons, ax[1][0])

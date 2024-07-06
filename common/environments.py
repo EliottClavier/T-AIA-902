@@ -6,7 +6,6 @@ from gymnasium.envs.toy_text.frozen_lake import generate_random_map
 from gymnasium.wrappers import RecordVideo, capped_cubic_video_schedule, TimeLimit
 
 from common.params import Params, FrozenLakeParams, TaxiDriverParams
-from common.taxi import TaxiEnv
 
 
 class Game:

@@ -165,7 +165,7 @@ class Params:
         default=(0, 0),
         metadata={
             "description": "Map size",
-            "type": Tuple[int],
+            "type": tuple,
             "configurable": False
         }
     )
@@ -251,7 +251,7 @@ class FrozenLakeParams(Params):
         default=(4, 4),
         metadata={
             "description": "Map size",
-            "type": Tuple[int],
+            "type": tuple,
         }
     )
 

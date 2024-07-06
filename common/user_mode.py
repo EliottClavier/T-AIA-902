@@ -275,7 +275,10 @@ class UserMode:
                 if f_def.metadata.get("optional", False) and not self.params[f_name]:
                     self.params[f_name] = None
                 else:
-                    self.params[f_name] = f_def.metadata.get("type")(self.params[f_name])
+                    if (target_type := f_def.metadata.get("type")) == tuple:
+                        self.params[f_name] = eval(self.params[f_name])
+                    else:
+                        self.params[f_name] = target_type(self.params[f_name])
 
     def check_params(self) -> None:
         """
