@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Tuple, Optional
 
-from common.policies import DecayedEpsilonGreedy, Softmax, EpsilonGreedy, Random
+from common.policies import DecayedEpsilonGreedy, Softmax, EpsilonGreedy
 
 
 @dataclass
@@ -139,15 +139,14 @@ class Params:
         }
     )
 
-    # Temperature for softmax policy
+    # Theta for Value Iteration
     theta: float = field(
         default=0.01,
         metadata={
-            "description": "Convergence threshold  (between 0 and 1)",
+            "description": "Convergence threshold (between 0 and 1) for Value Iteration",
             "type": float,
             "min": 0.0,
             "max": 1.0,
-            "prerequisite": ("policy", Random.__name__)
         }
     )
 

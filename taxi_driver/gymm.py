@@ -50,6 +50,7 @@ def main():
     algorithm.run()
 
     env = TaxiDriver(params, should_record=False).env
+    algorithm.env = env
 
     TaxiDriverPlots.plot(
         policy=algorithm.computed_policy,
