@@ -197,3 +197,25 @@ class Softmax(Policy):
 class Random(Policy):
     def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> Tuple[int, float]:
         return env.action_space.sample(), 0
+
+
+class Max(Policy):
+
+    def choose_action(self, env: Env, state: ObsType, Q: np.ndarray) -> int:
+        """
+        Epsilon-greedy policy.
+        :param env: environment
+        :param state: current state
+        :param Q: Q-table
+        :return: action
+        """
+        return np.argmax(Q[state])
+
+    @property
+    def description(self) -> str:
+        """
+        Get the description of the policy.
+        :return: description
+        """
+        return f"{self.__class__.__name__}"
+

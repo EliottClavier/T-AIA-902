@@ -316,6 +316,7 @@ class UserMode:
 
         # Create environment without recording
         env: Env = env_cls(params, should_record=False).env
+        algorithm.env = env
 
         plots_cls = self.get_class_from_module(common.plots.__name__, f"{self.params['environment']}Plots")
         plots_cls.plot(policy=algorithm.computed_policy, algorithm=algorithm, env=env, params=params)

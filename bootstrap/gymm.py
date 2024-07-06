@@ -47,6 +47,7 @@ def main():
         algorithm.run()
 
         env = FrozenLake(params, should_record=False).env
+        algorithm.env = env
 
         FrozenLakePlots.plot(
             policy=algorithm.computed_policy,

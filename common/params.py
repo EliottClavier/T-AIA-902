@@ -139,6 +139,17 @@ class Params:
         }
     )
 
+    # Theta for Value Iteration
+    theta: float = field(
+        default=0.01,
+        metadata={
+            "description": "Convergence threshold (between 0 and 1) for Value Iteration",
+            "type": float,
+            "min": 0.0,
+            "max": 1.0,
+        }
+    )
+
     # Render mode
     render_mode: str = field(
         default="rgb_array",

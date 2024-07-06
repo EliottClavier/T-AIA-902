@@ -206,6 +206,8 @@ class Algorithm(Evaluation):
 
         self.env.close()
 
+        self.save()
+
     def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
         """
         Method to complete the episode. Must be overridden if updating the policy has to be made at the end of the episode.
@@ -215,7 +217,6 @@ class Algorithm(Evaluation):
         """
         # Update the policy at the end of the episode
         self.policy.on_episode_end(current_episode=episode)
-        self.save()
 
     def step(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
         """
@@ -484,3 +485,75 @@ class BruteForce(Algorithm):
         self.historic.episodes_histories.append(episode_history)
         print(f"Episode {episode} - Average reward: {np.mean(episode_history.rewards)} - steps: {len(episode_history.rewards)}")
         super().complete_episode(episode, episode_history)
+
+
+class ValueIteration(Algorithm):
+    """
+    Value Iteration algorithm.
+    """
+
+    V: np.ndarray
+
+    def __init__(self, env: Env, params: Params, policy: Policy, reward_function: RewardFunction = None) -> None:
+        """
+        Initialize the algorithm.
+        :param env: environment
+        :param params: parameters to run the algorithm with
+        :param policy: policy to use
+        :param reward_function: reward function to use, can be None
+        :return: None
+        """
+        super().__init__(env, params, policy, reward_function)
+        self.V = np.zeros(self.env.observation_space.n)
+
+    def run(self) -> None:
+        """
+        Perform value iteration to find the optimal policy.
+        :return: None
+        """
+        while True:
+            delta = 0
+            for s in range(self.env.observation_space.n):
+                v = self.V[s]
+                max_value = max([
+                    sum([
+                        p * (r + self.params.gamma * self.V[s_])
+                        for p, s_, r, _ in self.env.P[s][a]
+                    ]) for a in range(self.env.action_space.n)
+                ])
+
+                self.V[s] = max_value
+                delta = max(delta, abs(v - max_value))
+
+            # Convergence threshold
+            if delta < self.params.theta:
+                break
+
+        # Once the value function has converged, extract the policy
+        self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
+        for s in range(self.env.observation_space.n):
+            self.Q[s] = [
+                sum([
+                    p * (r + self.params.gamma * self.V[s_])
+                    for p, s_, r, _ in self.env.P[s][a]
+                ]) for a in range(self.env.action_space.n)
+            ]
+
+        self.env.close()
+
+        self.save()
+
+    def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
+        """
+        Use the computed policy to play one step in the environment.
+        :param episode: episode number
+        :param state: current state
+        :param episode_history: history of the episode
+        :return: next state and if the episode is done
+        """
+        action = self.policy.choose_action(self.env, state, self.Q)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+        episode_history.states.append(next_state)
+        episode_history.actions.append(action)
+        episode_history.rewards.append(reward)
+        return next_state, terminated or truncated
