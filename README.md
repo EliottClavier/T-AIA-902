@@ -1,6 +1,6 @@
 # T-AIA-902
 
-> _Un projet de de recherche et de découverte du domaine du traitement de l'apprentissage renforcé (RL), de ses applications et de 
+> _Un projet de recherche et de découverte du domaine du traitement de l'apprentissage renforcé (RL), de ses applications et de 
 ses outils développés au fil des avancées de la recherche._
 
 ## Sommaire
@@ -15,7 +15,7 @@ ses outils développés au fil des avancées de la recherche._
 
 ## Groupe
 
-Le groupe ayant réalisé l'ensemble du travail de recherche et de développement est composé de 4 membres :
+Le groupe ayant réalisé l'ensemble du travail de recherche et de développement est composé de 5 membres :
 - Eliott CLAVIER
 - Marius GLO
 - Elie MORICEAU
