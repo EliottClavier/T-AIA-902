@@ -8,7 +8,7 @@ from common.user_mode import UserMode
 
 def main():
     user_mode = UserMode()
-    user_mode.display_menu()
+    user_mode.load(True)
 
 
 if __name__ == "__main__":

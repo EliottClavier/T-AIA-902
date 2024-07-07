@@ -30,9 +30,102 @@ class AlgorithmHistory:
     epsilons: List[float] = field(default_factory=list)
 
 
-class Algorithm:
+class Evaluation:
     """
-    Abstract class for reinforcement learning algorithms.
+    Class that implements the evaluation part for Algorithms.
+    """
+
+    env: Env
+    params: Params
+
+    Q: np.ndarray
+
+    def __init__(self, env: Env, params: Params, model_name: str) -> None:
+        """
+        Initialize the evaluation.
+        :param env: environment
+        :param params: parameters to run the algorithm with
+        :return: None
+        """
+        self.env = env
+        self.params = params
+        self.load(model_name)
+
+    def load(self, run_name: str = "") -> None:
+        """
+        Load the algorithm model.
+        :param run_name: name of the run. If empty, it will load the model with the current run name.
+        :return: None
+        """
+        self.Q = np.load(os.path.join(self.params.savemodel_folder, run_name or self.params.run_name + ".npy"))
+
+    @staticmethod
+    def get_policy_from_q(Q: np.ndarray) -> np.ndarray:
+        """
+        Get the optimal policy from a given Q-table.
+        :param Q: Q-table
+        :return: policy
+        """
+        return np.argmax(Q, axis=1)
+
+    @property
+    def computed_policy(self) -> np.ndarray:
+        """
+        Current policy computed from the Q-table.
+        :return: policy
+        """
+        return self.get_policy_from_q(self.Q)
+
+    def evaluate(self, rewards: Rewards, n_runs: int = None) -> Tuple[list, list]:
+        """
+        Evaluate by playing a number of games without learning.
+        :param rewards: rewards to use
+        :param n_runs: number of games to play. If None, it will play the number of games defined in the parameters.
+        :return: list of steps, number of losses
+        """
+
+        steps = []
+        losses = []
+
+        for _ in range(n_runs or self.params.n_runs):
+            n_steps, lost = self.evaluate_once(rewards)
+            steps.append(n_steps)
+            losses.append(lost)
+
+        self.env.close()
+
+        return steps, losses
+
+    def evaluate_once(self, rewards: Rewards) -> Tuple[int, bool]:
+        """
+        Evaluate by playing a game without learning.
+        :param rewards: rewards to use
+        :return: number of steps, if the game was lost
+        """
+
+        state, _ = self.env.reset() if self.params.random_seed else self.env.reset(seed=self.params.seed)
+        self.env.render()
+
+        steps = 0
+        lost = False
+        while True:
+            action = self.computed_policy[state]
+            state, reward, terminated, truncated, _ = self.env.step(action)
+            steps += 1
+
+            if terminated or truncated:
+                if reward in [rewards.lose_reward, rewards.playing_reward]:
+                    lost = True
+                break
+
+            self.env.render()
+
+        return steps, lost
+
+
+class Algorithm(Evaluation):
+    """
+    Class for reinforcement learning algorithms. Should be inherited by specific algorithms.
     """
 
     env: Env
@@ -93,23 +186,6 @@ class Algorithm:
             f"{policy.description}"
         )
 
-    @staticmethod
-    def get_policy_from_q(Q: np.ndarray) -> np.ndarray:
-        """
-        Get the optimal policy from a given Q-table.
-        :param Q: Q-table
-        :return: policy
-        """
-        return np.argmax(Q, axis=1)
-
-    @property
-    def computed_policy(self) -> np.ndarray:
-        """
-        Current policy computed from the Q-table.
-        :return: policy
-        """
-        return self.get_policy_from_q(self.Q)
-
     def run(self) -> None:
         """
         Run the algorithm.
@@ -130,6 +206,8 @@ class Algorithm:
 
         self.env.close()
 
+        self.save()
+
     def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
         """
         Method to complete the episode. Must be overridden if updating the policy has to be made at the end of the episode.
@@ -139,7 +217,6 @@ class Algorithm:
         """
         # Update the policy at the end of the episode
         self.policy.on_episode_end(current_episode=episode)
-        self.save()
 
     def step(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
         """
@@ -202,57 +279,6 @@ class Algorithm:
             os.makedirs(self.params.savemodel_folder)
 
         np.save(self.params.savemodel_folder / self.params.run_name, self.Q)
-
-    def load(self, run_name: str = "") -> None:
-        """
-        Load the algorithm model.
-        :param run_name: name of the run. If empty, it will load the model with the current run name.
-        :return: None
-        """
-        self.Q = np.load(os.path.join(self.params.savemodel_folder, run_name or self.params.run_name + ".npy"))
-
-    def evaluate(self, rewards: Rewards, n_runs: int = None) -> Tuple[list, list]:
-        """
-        Evaluate by playing a number of games without learning.
-        :param rewards: rewards to use
-        :param n_runs: number of games to play. If None, it will play the number of games defined in the parameters.
-        :return: list of steps, number of losses
-        """
-
-        steps = []
-        losses = []
-
-        for _ in range(n_runs or self.params.n_runs):
-            n_steps, lost = self.evaluate_once(rewards)
-            steps.append(n_steps)
-            losses.append(lost)
-
-        return steps, losses
-
-    def evaluate_once(self, rewards: Rewards) -> Tuple[int, bool]:
-        """
-        Evaluate by playing a game without learning.
-        :param rewards: rewards to use
-        :return: number of steps, if the game was lost
-        """
-
-        state, _ = self.env.reset() if self.params.random_seed else self.env.reset(seed=self.params.seed)
-        self.env.render()
-        steps = 0
-        lost = False
-        while True:
-            action = self.computed_policy[state]
-            state, reward, terminated, truncated, _ = self.env.step(action)
-            steps += 1
-
-            if terminated or truncated:
-                if reward in [rewards.lose_reward, rewards.playing_reward]:
-                    lost = True
-                break
-
-            self.env.render()
-
-        return steps, lost
 
 
 class MonteCarlo(Algorithm):
@@ -459,3 +485,75 @@ class BruteForce(Algorithm):
         self.historic.episodes_histories.append(episode_history)
         print(f"Episode {episode} - Average reward: {np.mean(episode_history.rewards)} - steps: {len(episode_history.rewards)}")
         super().complete_episode(episode, episode_history)
+
+
+class ValueIteration(Algorithm):
+    """
+    Value Iteration algorithm.
+    """
+
+    V: np.ndarray
+
+    def __init__(self, env: Env, params: Params, policy: Policy, reward_function: RewardFunction = None) -> None:
+        """
+        Initialize the algorithm.
+        :param env: environment
+        :param params: parameters to run the algorithm with
+        :param policy: policy to use
+        :param reward_function: reward function to use, can be None
+        :return: None
+        """
+        super().__init__(env, params, policy, reward_function)
+        self.V = np.zeros(self.env.observation_space.n)
+
+    def run(self) -> None:
+        """
+        Perform value iteration to find the optimal policy.
+        :return: None
+        """
+        while True:
+            delta = 0
+            for s in range(self.env.observation_space.n):
+                v = self.V[s]
+                max_value = max([
+                    sum([
+                        p * (r + self.params.gamma * self.V[s_])
+                        for p, s_, r, _ in self.env.P[s][a]
+                    ]) for a in range(self.env.action_space.n)
+                ])
+
+                self.V[s] = max_value
+                delta = max(delta, abs(v - max_value))
+
+            # Convergence threshold
+            if delta < self.params.theta:
+                break
+
+        # Once the value function has converged, extract the policy
+        self.Q = np.zeros((self.env.observation_space.n, self.env.action_space.n))
+        for s in range(self.env.observation_space.n):
+            self.Q[s] = [
+                sum([
+                    p * (r + self.params.gamma * self.V[s_])
+                    for p, s_, r, _ in self.env.P[s][a]
+                ]) for a in range(self.env.action_space.n)
+            ]
+
+        self.env.close()
+
+        self.save()
+
+    def play(self, episode: int, state: int, episode_history: EpisodeHistory) -> Tuple[int, bool]:
+        """
+        Use the computed policy to play one step in the environment.
+        :param episode: episode number
+        :param state: current state
+        :param episode_history: history of the episode
+        :return: next state and if the episode is done
+        """
+        action = self.policy.choose_action(self.env, state, self.Q)
+        next_state, reward, terminated, truncated, _ = self.env.step(action)
+        episode_history.states.append(next_state)
+        episode_history.actions.append(action)
+        episode_history.rewards.append(reward)
+        return next_state, terminated or truncated

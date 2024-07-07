@@ -7,3 +7,6 @@ static
 **/__pycache__/*
 
 **/configuration.json
+
+# ignore .DS_Store files
+**/.DS_Store
