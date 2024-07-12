@@ -1,17 +1,17 @@
-import sys
-import re
 import inspect
-import os
 import json
-from typing import Optional, Any
+import os
+import re
+import sys
+from typing import Any, Optional
 
 import cv2
-from InquirerPy import prompt
 from gymnasium import Env
+from InquirerPy import prompt
 
 import common
-from common.algorithms import Evaluation, Algorithm
-from common.params import TaxiDriverParams, FrozenLakeParams
+from common.algorithms import Algorithm, Evaluation
+from common.params import FrozenLakeParams, TaxiDriverParams
 from common.policies import Policy
 from common.rewards import Rewards
 

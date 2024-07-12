@@ -62,16 +62,29 @@ class Evaluation:
         self.load(model_name)
 
     def load(self, run_name: str = "") -> None:
-        """
-        Load the algorithm model.
-        :param run_name: name of the run. If empty, it will load the model with the current run name.
-        :return: None
-        """
-        self.Q = np.load(
-            os.path.join(
-                self.params.savemodel_folder, run_name or self.params.run_name + ".npy"
+        if run_name.endswith(".npy"):
+            # Load Q-table for traditional methods
+            self.Q = np.load(os.path.join(self.params.savemodel_folder, run_name))
+            self.is_deep_q = False
+        elif run_name.endswith(".pth"):
+            # Load Deep Q-Network
+            self.dqn = DQN(self.env.observation_space.n, self.env.action_space.n)
+            self.dqn.load_state_dict(
+                torch.load(os.path.join(self.params.savemodel_folder, run_name))
             )
-        )
+            self.dqn.eval()  # Set the network to evaluation mode
+            self.is_deep_q = True
+        else:
+            raise ValueError(f"Unsupported model format: {run_name}")
+
+    def get_action(self, state):
+        if self.is_deep_q:
+            state_tensor = torch.FloatTensor(self.one_hot_encode(state)).unsqueeze(0)
+            with torch.no_grad():
+                q_values = self.dqn(state_tensor)
+            return q_values.argmax().item()
+        else:
+            return np.argmax(self.Q[state])
 
     @staticmethod
     def get_policy_from_q(Q: np.ndarray) -> np.ndarray:
@@ -110,24 +123,17 @@ class Evaluation:
 
         return steps, losses
 
-    def evaluate_once(self, rewards: Rewards) -> Tuple[int, bool]:
-        """
-        Evaluate by playing a game without learning.
-        :param rewards: rewards to use
-        :return: number of steps, if the game was lost
-        """
+    def one_hot_encode(self, state):
+        return np.eye(self.env.observation_space.n)[state]
 
-        state, _ = (
-            self.env.reset()
-            if self.params.random_seed
-            else self.env.reset(seed=self.params.seed)
-        )
+    def evaluate_once(self, rewards: Rewards) -> Tuple[int, bool]:
+        state, _ = self.env.reset()
         self.env.render()
 
         steps = 0
         lost = False
         while True:
-            action = self.computed_policy[state]
+            action = self.get_action(state)
             state, reward, terminated, truncated, _ = self.env.step(action)
             steps += 1
 
@@ -388,10 +394,6 @@ class MonteCarlo(Algorithm):
 
 
 class QLearning(Algorithm):
-    """
-    Q-Learning algorithm.
-    """
-
     def __init__(
         self,
         env: Env,
@@ -399,27 +401,15 @@ class QLearning(Algorithm):
         policy: Policy,
         reward_function: RewardFunction = None,
     ) -> None:
-        """
-        Initialize the algorithm.
-        :param env: environment
-        :param params: parameters to run the algorithm with
-        :param policy: policy to use
-        :param reward_function: reward function to use, can be None
-        :return: None
-        """
         super().__init__(env, params, policy, reward_function)
+        self.episode_steps = 0
+        self.episode_reward = 0
+        self.wins = 0
+        self.losses = 0
 
     def update_action_value_function(
         self, state: int, action: int, reward: float, next_state: int
     ) -> None:
-        """
-        Update the action-value function.
-        :param state: current state
-        :param action: action
-        :param reward: reward
-        :param next_state: next state
-        :return: None
-        """
         self.Q[state, action] = self.Q[state, action] + self.params.learning_rate * (
             reward
             + self.params.gamma * np.max(self.Q[next_state, :])
@@ -428,31 +418,89 @@ class QLearning(Algorithm):
 
     def play(
         self, episode: int, state: int, episode_history: EpisodeHistory
-    ) -> int or None:
-        """
-        Method to play the game.
-        :param episode: episode number
-        :param state: current state
-        :param episode_history: history of the episode
-        :return: next state or None if the episode is done
-        """
-
+    ) -> Tuple[int, bool]:
         next_state, done = self.step(episode, state, episode_history)
         self.update_action_value_function(
             state, episode_history.actions[-1], episode_history.rewards[-1], next_state
         )
+        self.episode_steps += 1
+        self.episode_reward += episode_history.rewards[-1]
         return next_state, done
 
     def complete_episode(self, episode: int, episode_history: EpisodeHistory) -> None:
-        """
-        Method to complete the episode.
-        :param episode: episode number
-        :param episode_history: history of the episode
-        :return: None
-        """
         self.historic.average_rewards.append(np.mean(episode_history.rewards))
         self.historic.episodes_histories.append(episode_history)
+
+        # Record steps per episode
+        self.historic.episodes_steps.append(self.episode_steps)
+
+        # Record cumulative reward
+        if not self.historic.cumulative_rewards:
+            self.historic.cumulative_rewards.append(self.episode_reward)
+        else:
+            self.historic.cumulative_rewards.append(
+                self.historic.cumulative_rewards[-1] + self.episode_reward
+            )
+
+        # Determine win/loss (this may need to be adjusted based on your specific environment)
+        if self.episode_reward > 0:
+            self.wins += 1
+        else:
+            self.losses += 1
+
+        # Reset episode-specific variables
+        self.episode_steps = 0
+        self.episode_reward = 0
+
         super().complete_episode(episode, episode_history)
+
+    def run(self) -> None:
+        for episode in range(self.params.n_episodes):
+            state, _ = (
+                self.env.reset()
+                if self.params.random_seed
+                else self.env.reset(seed=self.params.seed)
+            )
+            episode_history = EpisodeHistory(states=[state], actions=[], rewards=[])
+
+            while True:
+                next_state, done = self.play(episode, state, episode_history)
+                if not done:
+                    state = next_state
+                else:
+                    break
+
+            self.complete_episode(episode, episode_history)
+
+        self.env.close()
+        self.save()
+
+    def evaluate(self, rewards: Rewards, n_runs: int = None) -> Tuple[list, list]:
+        steps = []
+        losses = []
+
+        for _ in range(n_runs or self.params.n_runs):
+            state, _ = self.env.reset()
+            episode_steps = 0
+            episode_reward = 0
+            done = False
+
+            while not done:
+                action = np.argmax(self.Q[state, :])
+                next_state, reward, terminated, truncated, _ = self.env.step(action)
+                done = terminated or truncated
+                state = next_state
+                episode_steps += 1
+                episode_reward += reward
+
+            steps.append(episode_steps)
+            losses.append(
+                episode_reward <= 0
+            )  # Consider it a loss if reward is not positive
+
+        self.env.close()
+
+        return steps, losses
 
 
 class SARSA(Algorithm):
@@ -777,12 +825,12 @@ class DeepQLearning(Algorithm):
 
             self.historic.average_rewards.append(total_reward)
             self.historic.epsilons.append(self.policy.epsilon)
-            self.historic.episodes_steps.append(episode_steps)  # Save steps per episode
+            self.historic.episodes_steps.append(episode_steps)
             self.historic.cumulative_rewards.append(
                 total_reward
                 if episode == 0
                 else self.historic.cumulative_rewards[-1] + total_reward
-            )  # Save cumulative rewards
+            )
             if episode_losses:
                 self.historic.loss_history.append(np.mean(episode_losses))
             self.policy.on_episode_end(current_episode=episode)
